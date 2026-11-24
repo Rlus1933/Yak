@@ -236,8 +236,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .pills span.on { border: 0; background: linear-gradient(90deg, var(--pill) 50%, var(--accent) 50%); color: transparent; }
 
 /* 시연 도구 */
-details.demo { background: transparent; border: 2px dashed var(--line); border-radius: var(--radius); padding: 12px 16px; font-size: max(14px, calc(var(--fs) * .8)); }
-details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+.demo { background: transparent; border: 2px dashed var(--accent); border-radius: var(--radius); padding: 12px 16px; font-size: max(14px, calc(var(--fs) * .8)); }
+.demo-title { margin: 0; font-size: 1em; font-weight: 700; color: var(--accent); }
 .foot { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; margin: 4px 0 0; }
 .wipe-btn { align-self: center; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 8px 18px; font-size: 14px; font-family: "Noto Sans KR", sans-serif; }
 .wipe-btn:hover { border-color: var(--alert); color: var(--alert); }
@@ -318,9 +318,16 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
   background: #111; color: #fff; border: 2px solid #fff; border-radius: 999px; padding: 8px 16px; font-size: 16px; font-weight: 700; font-family: "Noto Sans KR", sans-serif; }
 .skip:hover { background: #333; }
 #demoToggle { position: fixed; right: calc(14px + env(safe-area-inset-right, 0px)); bottom: calc(14px + env(safe-area-inset-bottom, 0px)); z-index: 150;
-  background: var(--surface); color: var(--muted); border: 2px dashed var(--line); border-radius: 999px; padding: 8px 14px; font-size: 14px; font-family: "Noto Sans KR", sans-serif; }
-#demoToggle[aria-pressed="true"] { background: var(--ink); color: var(--surface); border: 2px solid var(--ink); }
-#demoToggle b { margin-left: 4px; }
+  background: var(--surface); color: var(--ink); border: 2px solid var(--line); border-radius: 999px; padding: 6px 14px 6px 8px; font-size: 14px; font-family: "Noto Sans KR", sans-serif;
+  display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 14px color-mix(in srgb, #000 15%, transparent); }
+#demoToggle b { min-width: 2.2em; }
+/* 스위치: 꺼짐이면 손잡이가 왼쪽(회색), 켜짐이면 오른쪽(강조색) */
+#demoToggle .sw { width: 40px; height: 24px; border-radius: 12px; background: var(--line); position: relative; flex: none; transition: background .2s; }
+#demoToggle .sw i { position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3); transition: left .2s; }
+#demoToggle[aria-checked="true"] { border-color: var(--accent); }
+#demoToggle[aria-checked="true"] .sw { background: var(--accent); }
+#demoToggle[aria-checked="true"] .sw i { left: 19px; }
+#demoToggle[aria-checked="true"] b { color: var(--accent); }
 
 /* 축하 메시지 */
 .cele { text-align: center; align-items: center; }
@@ -470,8 +477,8 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
     </div>
   </section>
 
-  <details class="demo" id="demoPanel" open>
-    <summary>발표 시연 도구</summary>
+  <section class="demo" id="demoPanel" hidden>
+    <h2 class="demo-title">발표 시연 도구</h2>
     <div class="demo-grid">
       <label for="speed">시간 속도</label>
       <select id="speed">
@@ -487,7 +494,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       <button type="button" id="voiceBtn">음성 읽기: 꺼짐</button>
       <button type="button" id="resetAll">시연용 예시로 되돌리기</button>
     </div>
-  </details>
+  </section>
   <button class="wipe-btn" type="button" id="wipeBtn">모든 기록 지우기 (초기화)</button>
   <p class="foot">약 챙김이는 복용 시간을 알려 주는 도우미예요.<br>약의 양과 먹는 방법은 꼭 의사·약사와 상의하세요.</p>
 </div>
@@ -558,7 +565,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 <div class="modal" id="mWipe" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wipeT">
     <h3 id="wipeT">모든 기록을 지울까요?</h3>
-    <p>이 기기에 저장된 아래 내용이 모두 지워지고, 약도 기록도 없는 빈 상태로 다시 시작해요. 되돌릴 수 없어요.</p>
+    <p id="wipeDesc">이 기기에 저장된 아래 내용이 모두 지워지고, 약도 기록도 없는 빈 상태로 다시 시작해요. 되돌릴 수 없어요.</p>
     <ul class="wipe-list">
       <li>포인트, 칭호, 테마</li>
       <li>추가한 약과 복용 기간</li>
@@ -603,7 +610,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 <div id="grayscale" hidden></div>
 
 <!-- 오른쪽 아래: 시연 모드 켜기/끄기 -->
-<button id="demoToggle" type="button" aria-pressed="true">시연 모드 <b>켜짐</b></button>
+<button id="demoToggle" type="button" role="switch" aria-checked="false"><span class="sw" aria-hidden="true"><i></i></span>발표 시연 모드 <b>꺼짐</b></button>
 
 <div id="egg-wrap">
   <button id="egg" type="button" aria-label="수상한 알">
@@ -752,7 +759,7 @@ const S = {
   ...makeStart(TODAY),
   min: 8 * 60 + 3,   // 가상 시계 (하루 0시부터 몇 분 지났는지). 시작은 08:03
   speed: 1, sound: true, voice: false, age: 'elder',
-  demo: true, sirenSkip: null,   // demo: 시연 모드 켜짐 여부, sirenSkip: 경보를 건너뛴 약의 번호
+  demo: false, sirenSkip: null,   // demo: 시연 모드 켜짐 여부, sirenSkip: 경보를 건너뛴 약의 번호
   doses: []
 };
 function makeDose(m) { return { id: m.id, name: m.name, t: m.t, when: whenOf(m.t), start: m.start, end: m.end, taken: null }; }
@@ -773,8 +780,8 @@ try {
 S.doses = savedDoses || makeDoses(S.meds);
 function save() {
   try {
-    const { points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example } = S;
-    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example }));
+    const { points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example, demo } = S;
+    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example, demo }));
   } catch (e) {}
 }
 function finishDay() {
@@ -929,7 +936,7 @@ function render() {
   $('demoPanel').hidden = !S.demo;
   $('sirenSkip').hidden = !S.demo;
   $('catSkip').hidden = !S.demo;
-  $('demoToggle').setAttribute('aria-pressed', S.demo);
+  $('demoToggle').setAttribute('aria-checked', S.demo);
   $('demoToggle').querySelector('b').textContent = S.demo ? '켜짐' : '꺼짐';
 
   // 단계가 바뀌면 음성으로 읽기
@@ -1086,7 +1093,13 @@ $('resetAll').addEventListener('click', () => {
   calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
   save(); render(); toast('시연용 예시 상태로 돌렸어요');
 });
-$('wipeBtn').addEventListener('click', () => open('mWipe'));
+$('wipeBtn').addEventListener('click', () => {
+  // 시연 모드인지에 따라 지운 뒤 어떤 상태가 되는지 안내 문구를 바꿈
+  $('wipeDesc').textContent = S.demo
+    ? '이 기기에 저장된 아래 내용이 모두 지워져요. 지금은 발표 시연 모드라서, 지운 뒤 시연용 예시 약과 예시 달력 기록으로 다시 시작해요.'
+    : '이 기기에 저장된 아래 내용이 모두 지워지고, 약도 기록도 없는 빈 상태로 다시 시작해요. 되돌릴 수 없어요.';
+  open('mWipe');
+});
 $('wipeOk').addEventListener('click', async () => {
   // 1) 이 앱이 브라우저에 저장한 모든 것을 지움 (저장소·세션 저장소·캐시 저장소·IndexedDB)
   try { localStorage.clear(); } catch (e) {}
@@ -1095,11 +1108,13 @@ $('wipeOk').addEventListener('click', async () => {
   try { if (indexedDB.databases) for (const db of await indexedDB.databases()) indexedDB.deleteDatabase(db.name); } catch (e) {}
   // 2) 화면 속 상태도 처음으로 되돌림 (새로고침이 막힌 환경 대비)
   sirenOff();
-  Object.assign(S, makeEmpty(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder' });
-  S.doses = [];
+  // 시연 모드면 시연용 예시 상태로, 아니면 완전히 빈 상태로 (시연 모드 켜짐/꺼짐은 그대로 유지)
+  const demo = S.demo;
+  Object.assign(S, demo ? makeStart(TODAY) : makeEmpty(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder', demo });
+  S.doses = makeDoses(S.meds);
   calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
-  save();   // 빈 상태를 저장해 둠 (저장된 게 없으면 새로고침 때 시연용 예시가 다시 채워지기 때문)
-  close('mWipe'); render(); toast('모든 기록을 지웠어요');
+  save();   // 새 상태를 저장해 둠 (저장된 게 없으면 새로고침 때 무조건 시연용 예시가 채워지기 때문)
+  close('mWipe'); render(); toast(demo ? '기록을 지우고 시연용 예시로 다시 시작해요' : '모든 기록을 지웠어요');
   // 3) 페이지를 새로 불러와 완전히 처음부터 시작
   setTimeout(() => { try { location.reload(); } catch (e) {} }, 900);
 });
@@ -1112,8 +1127,8 @@ $('sirenMute').addEventListener('click', () => { S.sound = false; sirenOff(); re
 
 /* ───────── 시연 모드 ───────── */
 $('demoToggle').addEventListener('click', () => {
-  S.demo = !S.demo; render();
-  toast(S.demo ? '시연 모드를 켰어요. 경보·인증 창에서 건너뛸 수 있어요' : '시연 모드를 껐어요');
+  S.demo = !S.demo; save(); render();
+  toast(S.demo ? '발표 시연 모드를 켰어요. 아래에 시연 도구가 나타나요' : '발표 시연 모드를 껐어요');
 });
 $('sirenSkip').addEventListener('click', () => {
   // 경보만 닫음. 약은 '먹음'이 아니라 그대로 '지남'으로 남음
