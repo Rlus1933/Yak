@@ -1081,7 +1081,9 @@ $('nextDay').addEventListener('click', () => {
   S.date = addDays(S.date, 1);
   const gone = expireMeds();
   if (gone.length) msgs.push(`복용 기간이 끝나서 목록에서 뺐어요: ${gone.join(', ')}`);
-  S.dayDone = false; S.doses = makeDoses(S.meds); S.min = 7 * 60 + 58; S.sirenSkip = null;
+  S.dayDone = false; S.doses = makeDoses(S.meds); S.sirenSkip = null;
+  // 새 날의 시계는 07:58에서 시작하되, 그보다 이른 약이 있으면 그 약 2분 전부터 시작 (아침이 되자마자 경보가 울리지 않게)
+  S.min = Math.max(0, Math.min(7 * 60 + 58, ...S.doses.map(d => d.t - 2)));
   calSel = S.date; calMonth = S.date.slice(0, 7);
   save(); render();
   toast(msgs.length ? msgs.join(' / ') : `${prettyDate(S.date)} 아침이에요`);
@@ -1156,16 +1158,26 @@ $('addForm').addEventListener('submit', e => {
     if (en < st) return toast('마지막 날이 시작일보다 앞설 수 없어요');
     if (en < S.date) return toast('마지막 날이 이미 지났어요. 날짜를 다시 골라 주세요');
     med.start = st; med.end = en;
-    S.periods.push({ id: med.id, name, start: st, end: en, color: PERIOD_COLORS[S.periods.length % PERIOD_COLORS.length] });
   }
+  // 오늘 먹을 시각이 이미 지났다면 오늘은 건너뛰고 내일부터 시작 (추가하자마자 경보가 울리지 않게)
+  const tomorrow = addDays(S.date, 1);
+  const delayed = t <= S.min && (!med.start || med.start <= S.date);
+  if (delayed) {
+    if (med.end && med.start === S.date) med.end = addDays(med.end, 1);   // 오늘 시작하는 n일치 약 → 내일부터 n일치로 하루씩 미룸
+    med.start = tomorrow;
+    if (med.end && med.end < tomorrow) med.end = tomorrow;                   // 오늘이 마지막 날이었다면 내일 하루는 먹도록
+  }
+  if (med.end) S.periods.push({ id: med.id, name, start: med.start, end: med.end, color: PERIOD_COLORS[S.periods.length % PERIOD_COLORS.length] });
   S.meds.push(med);
   S.events.push({ date: S.date, type: 'add', name, note: med.end ? `${shortDate(med.start)}~${shortDate(med.end)}` : '매일' });   // 달력에 '약 추가' 기록
   const today = activeOn(med, S.date);
   if (today) { S.doses.push(makeDose(med)); S.doses.sort((a, b) => a.t - b.t); S.dayDone = false; }   // 오늘 먹는 약이면 오늘 목록에도 바로 추가
   $('medName').value = ''; $('usePeriod').checked = false; $('perDates').hidden = true;
   save(); render();
-  if (!today) toast(`${name}을(를) 추가했어요. ${prettyDate(med.start)}부터 목록에 나타나요`);
-  else toast(`${hhmm(t)} ${name}을(를) 추가했어요${med.end ? ` (${shortDate(med.end)}까지)` : ''}${t <= S.min ? ' · 이미 지난 시간이라 바로 알림이 시작돼요' : ''}`);
+  const until = med.end ? ` (${shortDate(med.start)}~${shortDate(med.end)})` : '';
+  if (delayed) toast(`오늘 ${hhmm(t)}은 이미 지나서, ${name}은(는) 내일 ${prettyDate(tomorrow)}부터 알려 드려요${until}`);
+  else if (!today) toast(`${name}을(를) 추가했어요. ${prettyDate(med.start)}부터 목록에 나타나요${until}`);
+  else toast(`${hhmm(t)} ${name}을(를) 추가했어요${med.end ? ` (${shortDate(med.end)}까지)` : ''}`);
 });
 $('usePeriod').addEventListener('change', e => {
   // 체크하면 시작일=오늘, 5일치로 미리 채워 둠
