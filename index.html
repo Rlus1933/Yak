@@ -459,7 +459,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       </div>
     </div>
     <div class="cal-detail" id="calDetail"></div>
-    <p class="note">처음에 보이는 지난 기록은 시연용 예시예요. 날짜를 누르면 그날 기록을 볼 수 있어요.</p>
+    <p class="note" id="calNote">처음에 보이는 지난 기록은 시연용 예시예요. 날짜를 누르면 그날 기록을 볼 수 있어요.</p>
   </section>
 
   <section class="sec">
@@ -485,7 +485,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       <button type="button" id="jumpNext">다음 약 1분 전으로</button>
       <button type="button" id="nextDay">다음 날로</button>
       <button type="button" id="voiceBtn">음성 읽기: 꺼짐</button>
-      <button type="button" id="resetAll">처음 상태로</button>
+      <button type="button" id="resetAll">시연용 예시로 되돌리기</button>
     </div>
   </details>
   <button class="wipe-btn" type="button" id="wipeBtn">모든 기록 지우기 (초기화)</button>
@@ -558,7 +558,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
 <div class="modal" id="mWipe" hidden>
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wipeT">
     <h3 id="wipeT">모든 기록을 지울까요?</h3>
-    <p>이 기기에 저장된 아래 내용이 모두 지워지고, 앱이 처음 상태로 다시 시작해요. 되돌릴 수 없어요.</p>
+    <p>이 기기에 저장된 아래 내용이 모두 지워지고, 약도 기록도 없는 빈 상태로 다시 시작해요. 되돌릴 수 없어요.</p>
     <ul class="wipe-list">
       <li>포인트, 칭호, 테마</li>
       <li>추가한 약과 복용 기간</li>
@@ -710,8 +710,13 @@ function activeOn(m, date) { return (!m.start || m.start <= date) && (!m.end || 
 const TODAY = ymd(new Date());
 const PERIOD_COLORS = ['#3D8BD9', '#E07A5F', '#9B6BD3', '#2BA39A', '#D9A21B'];   // 기간 약 막대 색
 
+function makeEmpty(today) {
+  // 초기화 상태: 약도, 포인트도, 달력 기록도 하나도 없는 빈 상태
+  return { points: 0, streak: 0, owned: { title: ['newbie'], skin: ['base'] }, title: 'newbie', skin: 'base', dialect: 'std',
+    meds: [], periods: [], events: [], history: {}, date: today, dayDone: false, example: false };
+}
 function makeStart(today) {
-  // 처음 상태: 매일 먹는 약 3개 + 5일만 먹는 감기약, 그리고 지난 12일 동안의 예시 기록
+  // 시연용 처음 상태: 매일 먹는 약 3개 + 5일만 먹는 감기약, 그리고 지난 12일 동안의 예시 기록
   const D = n => addDays(today, n);
   const meds = [
     { id: 1, name: '혈압약', t: 8 * 60 },
@@ -741,7 +746,7 @@ function makeStart(today) {
     history[D(-n)] = { items: items.map(([name, t]) => ({ name, t, taken: !(missed[n] || []).includes(name) })) };
   }
   return { points: 120, streak: 6, owned: { title: ['newbie'], skin: ['base'] }, title: 'newbie', skin: 'base', dialect: 'std',
-    meds, periods, events, history, date: today, dayDone: false };
+    meds, periods, events, history, date: today, dayDone: false, example: true };
 }
 const S = {
   ...makeStart(TODAY),
@@ -768,8 +773,8 @@ try {
 S.doses = savedDoses || makeDoses(S.meds);
 function save() {
   try {
-    const { points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone } = S;
-    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone }));
+    const { points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example } = S;
+    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone, example }));
   } catch (e) {}
 }
 function finishDay() {
@@ -897,10 +902,11 @@ function render() {
   let msg;
   if (lv > 0) msg = c.lv[lv](d);
   else if (n) msg = c.lv[0](n);
+  else if (!S.doses.length) msg = '등록된 약이 없어요. 아래에서 약을 추가해 주세요.';
   else msg = c.allDone;
   const nag = $('nag');
   nag.dataset.lv = lv;
-  $('nagHead').textContent = lv > 0 ? `잔소리 ${lv}단계 · ${S.min - d.t < 1 ? '지금' : Math.floor(S.min - d.t) + '분 지남'}` : (n ? '다음 약 안내' : '오늘 끝');
+  $('nagHead').textContent = lv > 0 ? `잔소리 ${lv}단계 · ${S.min - d.t < 1 ? '지금' : Math.floor(S.min - d.t) + '분 지남'}` : (n ? '다음 약 안내' : S.doses.length ? '오늘 끝' : '약 등록 필요');
   $('nagMsg').textContent = msg;
   [...$('meter').children].forEach((el, i) => { el.classList.toggle('on', i < lv); el.classList.toggle('hot', i < lv && lv >= 3); });
   $('cry').hidden = lv < 3;
@@ -909,7 +915,7 @@ function render() {
   // 큰 버튼
   const tg = target();
   $('eatLabel').textContent = c.btn; $('sirenEatLabel').textContent = c.btn;
-  $('eatSub').textContent = tg ? `${tg.when} ${tg.name}` : (n ? `다음 약 ${hhmm(n.t)}` : c.allDone);
+  $('eatSub').textContent = tg ? `${tg.when} ${tg.name}` : (n ? `다음 약 ${hhmm(n.t)}` : S.doses.length ? c.allDone : '등록된 약 없음');
   $('sirenSub').textContent = tg ? `${tg.when} ${tg.name}` : '';
   $('eatBtn').disabled = !n;
 
@@ -966,6 +972,7 @@ function render() {
   $('streakNote').textContent = S.dayDone ? '오늘 기록 완료!' : (S.streak < 7 ? `${7 - S.streak}일 더 하면 '알약 마스터'` : '하루 약을 다 드시면 1일이 올라가요');
 
   $('grayscale').hidden = S.age !== 'ancestor';
+  $('calNote').textContent = S.example === false ? '날짜를 누르면 그날 기록을 볼 수 있어요.' : '처음에 보이는 지난 기록은 시연용 예시예요. 날짜를 누르면 그날 기록을 볼 수 있어요.';
   renderCal();
 }
 
@@ -1072,7 +1079,13 @@ $('nextDay').addEventListener('click', () => {
   save(); render();
   toast(msgs.length ? msgs.join(' / ') : `${prettyDate(S.date)} 아침이에요`);
 });
-$('resetAll').addEventListener('click', () => open('mWipe'));   // 시연 도구의 '처음 상태로'도 같은 초기화 창을 엶
+$('resetAll').addEventListener('click', () => {
+  // 시연 도구: 발표용 예시 약과 예시 달력 기록으로 되돌림
+  Object.assign(S, makeStart(TODAY), { min: 8 * 60 + 3, sirenSkip: null });
+  S.doses = makeDoses(S.meds);
+  calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
+  save(); render(); toast('시연용 예시 상태로 돌렸어요');
+});
 $('wipeBtn').addEventListener('click', () => open('mWipe'));
 $('wipeOk').addEventListener('click', async () => {
   // 1) 이 앱이 브라우저에 저장한 모든 것을 지움 (저장소·세션 저장소·캐시 저장소·IndexedDB)
@@ -1082,10 +1095,11 @@ $('wipeOk').addEventListener('click', async () => {
   try { if (indexedDB.databases) for (const db of await indexedDB.databases()) indexedDB.deleteDatabase(db.name); } catch (e) {}
   // 2) 화면 속 상태도 처음으로 되돌림 (새로고침이 막힌 환경 대비)
   sirenOff();
-  Object.assign(S, makeStart(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder' });
-  S.doses = makeDoses(S.meds);
-  calSel = S.date; calMonth = S.date.slice(0, 7);
-  close('mWipe'); render(); toast('모든 기록을 지우고 처음 상태로 돌렸어요');
+  Object.assign(S, makeEmpty(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder' });
+  S.doses = [];
+  calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
+  save();   // 빈 상태를 저장해 둠 (저장된 게 없으면 새로고침 때 시연용 예시가 다시 채워지기 때문)
+  close('mWipe'); render(); toast('모든 기록을 지웠어요');
   // 3) 페이지를 새로 불러와 완전히 처음부터 시작
   setTimeout(() => { try { location.reload(); } catch (e) {} }, 900);
 });
