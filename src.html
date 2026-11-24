@@ -152,9 +152,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .dose.empty { display: block; color: var(--muted); text-align: center; padding: 22px 18px; }
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .sec-head .note { font-variant-numeric: tabular-nums; }
-.dose { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 14px 14px 14px 18px; }
-.dose .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }   /* 수정·삭제 버튼을 위아래로 */
-.dose .edit { background: transparent; border: 0; color: var(--accent); font-size: .75em; padding: 4px; text-decoration: underline; font-weight: 700; }
+.dose { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 12px 10px 12px 16px; }
+.dose .acts { display: flex; align-items: center; gap: 0; }   /* 수정·삭제 버튼을 옆으로 나란히 (줄 높이가 늘어나지 않게) */
+.dose .edit { background: transparent; border: 0; color: var(--accent); font-size: .75em; padding: 6px 4px; text-decoration: underline; font-weight: 700; }
 .dose.later { opacity: .75; }   /* 아직 시작 전인 약 */
 .dose-sub { padding: 8px 18px; font-size: .75em; color: var(--muted); background: var(--bg); border-top: 1px solid var(--line); }
 .edit-form { border: 0; padding: 0; background: transparent; }
@@ -181,7 +181,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .per-days .quick { display: flex; flex-wrap: wrap; gap: 6px; }
 .per-days .quick button { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: .85em; }
 .per-days .quick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
-.dose .nm small { display: block; font-size: .72em; color: var(--muted); }
+.dose .nm small { display: block; font-size: .72em; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dose .nm small b { color: var(--accent); font-weight: 700; }
 
 /* ── 복용 달력 ── */
@@ -192,7 +192,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .cal-week span { text-align: center; font-size: 13px; color: var(--muted); }
 .cal-week span:first-child { color: var(--alert); }
-.cd { position: relative; min-height: 54px; border: 1px solid transparent; border-radius: 10px; background: transparent; padding: 4px 2px 8px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 14px; font-family: "Noto Sans KR", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.cd { position: relative; min-height: 54px; border: 2px solid transparent; overflow: visible; border-radius: 10px; background: transparent; padding: 4px 2px 8px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 14px; font-family: "Noto Sans KR", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
 .cd .n { font-weight: 700; }
 .cd .mk { font-size: 13px; font-weight: 900; line-height: 1.2; min-height: 1.2em; }
 .cd.blank { visibility: hidden; }
@@ -209,8 +209,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .dot.end { background: var(--muted); }
 .dot.star { background: var(--pill); }
 .dot.edit { background: transparent; border: 2px solid var(--accent); box-sizing: border-box; }
-.cd .bars { position: absolute; left: 3px; right: 3px; bottom: 3px; display: flex; flex-direction: column; gap: 1px; }
-.cd .bars i { display: block; height: 3px; border-radius: 2px; }
+/* 기간 막대: 칸 테두리(2px)+칸 사이 공백의 절반(2px)만큼 양옆으로 늘려서 옆 칸 막대와 끊김 없이 이어지게 함 */
+.cd .bars { position: absolute; left: -4px; right: -4px; bottom: 3px; height: 8px; pointer-events: none; }
+.cd .bars i { position: absolute; left: 0; right: 0; height: 2px; }
+.cd .bars i.ws { left: 4px; }    /* 일요일: 왼쪽(줄 바깥)으로는 늘리지 않음 */
+.cd .bars i.we { right: 4px; }   /* 토요일: 오른쪽(줄 바깥)으로는 늘리지 않음 */
+.cd .bars i.s { left: 8px; border-top-left-radius: 1px; border-bottom-left-radius: 1px; }      /* 기간 첫날: 칸 안쪽에서 시작 */
+.cd .bars i.e { right: 8px; border-top-right-radius: 1px; border-bottom-right-radius: 1px; }   /* 기간 마지막 날: 칸 안쪽에서 끝 */
 .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); padding-top: 6px; border-top: 1px solid var(--line); }
 .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
 .lg-box { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
@@ -227,8 +232,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .badge { font-size: .75em; padding: 2px 10px; border-radius: 999px; border: 1.5px solid currentColor; font-weight: 700; }
 .badge.full { color: var(--accent); } .badge.miss { color: var(--alert); } .badge.ing, .badge.none { color: var(--muted); }
 .ok { color: var(--accent); font-weight: 700; } .no { color: var(--alert); font-weight: 700; } .wait2 { color: var(--muted); }
-.dose .nm { min-width: 0; }
-.dose .nm span { color: var(--muted); font-size: .85em; margin-right: 6px; }
+.dose .nm { min-width: 0; overflow-wrap: normal; line-height: 1.3; }   /* 약 이름이 글자 중간에서 끊기지 않게 */
+/* 시간 아래에 '아침·점심' 작게 표시 → 이름 칸을 넓게 씀 */
+.dose .tm { display: flex; flex-direction: column; align-items: center; line-height: 1.15; }
+.dose .tm span { font-size: .62em; color: var(--muted); white-space: nowrap; }
 .st { font-size: .8em; padding: 3px 12px; border-radius: 999px; white-space: nowrap; border: 1.5px solid currentColor; font-variant-numeric: tabular-nums; }
 .st.done { color: var(--accent); }
 .st.late { color: var(--alert); font-weight: 700; }
@@ -1024,8 +1031,8 @@ function render() {
     const asking = delAsk && delAsk.id === x.id;   // '정말 삭제?' 확인 중인 줄
     // 기간 약이면 '~11/26까지 · 3일 남음'을 이름 아래에 표시
     const left = x.end ? Math.round((parseYmd(x.end) - parseYmd(S.date)) / 864e5) : null;
-    const per = x.end ? `<small>~${shortDate(x.end)}까지 · ${left === 0 ? '<b>오늘이 마지막 날</b>' : left + '일 남음'}</small>` : '';
-    return `<li class="dose${tg && tg.id === x.id ? ' cur' : ''}"><time>${hhmm(x.t)}</time><div class="nm"><span>${x.when}</span>${esc(x.name)}${per}</div>${st}${actsHtml(x)}</li>`;
+    const per = x.end ? `<small>${left === 0 ? '<b>오늘이 마지막 날</b>' : left + '일 남음'} (~${shortDate(x.end)})</small>` : '';   // 남은 날을 앞에: 칸이 좁아 뒤가 잘려도 중요한 정보는 보이게
+    return `<li class="dose${tg && tg.id === x.id ? ' cur' : ''}"><span class="tm"><time>${hhmm(x.t)}</time><span>${x.when}</span></span><div class="nm">${esc(x.name)}${per}</div>${st}${actsHtml(x)}</li>`;
   }).join('') + laterHtml();
   if (html !== lastListHtml) { $('doseList').innerHTML = html; lastListHtml = html; }
 
@@ -1051,7 +1058,7 @@ function laterHtml() {
   const later = S.meds.filter(m => m.start && m.start > S.date).sort((a, b) => a.start.localeCompare(b.start) || a.t - b.t);
   if (!later.length) return '';
   return '<li class="dose-sub">시작 전인 약</li>' + later.map(m =>
-    `<li class="dose later"><time>${hhmm(m.t)}</time><div class="nm"><span>${whenOf(m.t)}</span>${esc(m.name)}<small>${shortDate(m.start)}부터${m.end ? ` ~${shortDate(m.end)}까지` : ' 매일'}</small></div><span class="st wait">시작 전</span>${actsHtml(m)}</li>`).join('');
+    `<li class="dose later"><span class="tm"><time>${hhmm(m.t)}</time><span>${whenOf(m.t)}</span></span><div class="nm">${esc(m.name)}<small>${shortDate(m.start)}부터${m.end ? ` ~${shortDate(m.end)}까지` : ' 매일'}</small></div><span class="st wait">시작 전</span>${actsHtml(m)}</li>`).join('');
 }
 
 /* ───────── 복용 달력 ───────── */
@@ -1067,6 +1074,9 @@ function dayInfo(date) {
 function renderCal() {
   const [y, m] = calMonth.split('-').map(Number);
   const first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+  // 이번 달에 걸친 기간 약마다 '줄 번호'를 정해 둠 → 날마다 같은 높이에 그려져야 막대가 한 줄로 이어짐 (최대 3줄)
+  const mFirst = `${calMonth}-01`, mLast = `${calMonth}-${String(days).padStart(2, '0')}`;
+  const lanes = S.periods.filter(p => p.start <= mLast && p.end >= mFirst).slice(0, 3);
   let cells = '';
   for (let i = 0; i < first.getDay(); i++) cells += '<span class="cd blank"></span>';   // 1일 앞의 빈칸
   let fullN = 0, missN = 0;
@@ -1077,7 +1087,9 @@ function renderCal() {
     if (info && info.status === 'miss') missN++;
     const evs = S.events.filter(e => e.date === date);
     const dots = [...new Set(evs.map(e => e.type === 'add' ? 'add' : e.type === 'edit' ? 'edit' : e.type === 'streak' ? 'star' : 'end'))].map(k => `<i class="dot ${k}"></i>`).join('');
-    const bars = S.periods.filter(p => p.start <= date && date <= p.end).slice(0, 3).map(p => `<i style="background:${p.color}"></i>`).join('');
+    const dow = new Date(y, m - 1, d).getDay();   // 0=일요일, 6=토요일
+    const bars = lanes.map((p, i) => p.start <= date && date <= p.end
+      ? `<i class="${[p.start === date ? 's' : '', p.end === date ? 'e' : '', dow === 0 ? 'ws' : '', dow === 6 ? 'we' : ''].join(' ').trim()}" style="background:${p.color};bottom:${i * 3}px"></i>` : '').join('');
     const mk = !info ? '' : info.status === 'full' ? '✓' : info.status === 'miss' ? `${info.done}/${info.total}` : '';
     const cls = ['cd', info ? info.status : '', date > S.date ? 'future' : '', date === S.date ? 'today' : '', date === calSel ? 'sel' : ''].join(' ');
     cells += `<button type="button" class="${cls}" data-date="${date}" aria-label="${prettyDate(date)}"><span class="n">${d}</span><span class="mk">${mk}</span><span class="dots">${dots}</span><span class="bars">${bars}</span></button>`;
