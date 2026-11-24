@@ -18,7 +18,7 @@
   --font-display: "Jua", "Noto Sans KR", system-ui, sans-serif;
   --font-body: "Noto Sans KR", system-ui, sans-serif;
   /* 크기 토큰 (어르신용 기본값: 평균보다 큼) */
-  --fs: 20px; --fs-msg: 32px; --btn-h: 108px; --btn-fs: 38px; --radius: 22px; --chip-fs: 18px;
+  --fs: 20px; --fs-msg: 32px; --btn-h: 108px; --btn-fs: 38px; --radius: 22px; --chip-fs: 16px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
@@ -62,7 +62,7 @@
 }
 /* 조상님용: 옛 글씨체 + 정말 큰 버튼 (흑백은 아래 #grayscale 막으로 처리) */
 :root[data-age="ancestor"] {
-  --fs: 24px; --fs-msg: 40px; --btn-h: 56vh; --btn-fs: 72px; --radius: 6px; --chip-fs: 20px;
+  --fs: 24px; --fs-msg: 40px; --btn-h: 56vh; --btn-fs: 72px; --radius: 6px; --chip-fs: 17px;
   --font-display: "Song Myung", serif; --font-body: "Song Myung", serif;
 }
 
@@ -83,13 +83,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
 /* 상단 */
 .top { display: flex; flex-direction: column; gap: 10px; }
-.top-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.top-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .brand { font-family: var(--font-display); font-size: calc(var(--fs) * 1.6); margin: 0; letter-spacing: -0.01em; display: flex; align-items: center; gap: 8px; }
 .brand svg { width: 1.1em; height: 1.1em; flex: none; }
-.clock { font-variant-numeric: tabular-nums; font-size: calc(var(--fs) * 1.1); color: var(--muted); }
-.clock b { color: var(--ink); font-size: 1.3em; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font-size: var(--chip-fs); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; display: inline-flex; gap: 6px; align-items: center; }
+/* 시계: 날짜와 시각을 알약 모양 칸에 묶음 */
+.clock { font-variant-numeric: tabular-nums; font-size: var(--chip-fs); color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 6px 4px 14px; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.clock b { color: var(--on-accent); background: var(--accent); border-radius: 999px; padding: 0 12px; font-size: 1.25em; }
+/* 포인트·칭호: 한 줄에 두 칸, 길면 말줄임 */
+.chips { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; justify-items: start; }
+.chip { font-size: var(--chip-fs); background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 14px; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; max-width: 100%; min-width: 0; }
+.chip strong { overflow: hidden; text-overflow: ellipsis; }
 .chip strong { font-variant-numeric: tabular-nums; color: var(--accent); }
 .tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .tool-btn {
@@ -104,9 +107,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   background: var(--surface); border-radius: var(--radius); padding: 20px 20px 18px;
   border: 3px solid var(--line); display: flex; flex-direction: column; gap: 12px; transition: border-color .3s, background .3s;
 }
-.nag-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: calc(var(--fs) * .85); }
-.meter { display: flex; gap: 6px; }
-.meter i { width: 26px; height: 12px; border-radius: 6px; background: var(--line); display: block; }
+.nag-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; color: var(--muted); font-size: max(14px, calc(var(--fs) * .8)); }
+.nag-head span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.meter { display: flex; gap: 5px; flex: none; }
+.meter i { width: 18px; height: 10px; border-radius: 5px; background: var(--line); display: block; }
 .meter i.on { background: var(--pill); }
 .meter i.on.hot { background: var(--alert); }
 .nag-msg { font-family: var(--font-display); font-size: var(--fs-msg); line-height: 1.25; margin: 0; text-wrap: balance; }
@@ -115,6 +119,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .nag[data-lv="3"] .nag-msg { color: var(--alert); }
 .nag[data-lv="2"] .nag-msg { animation: nudge 1.6s ease-in-out infinite; }
 @keyframes nudge { 0%,100% { transform: none; } 10% { transform: translateX(-4px); } 20% { transform: translateX(4px); } 30% { transform: none; } }
+/* 오늘 진행 상황: 복용 개수 막대 + 다음 약까지 남은 시간 */
+.today { border-top: 1px solid var(--line); padding-top: 12px; display: flex; flex-direction: column; gap: 8px; font-size: max(14px, calc(var(--fs) * .8)); color: var(--muted); }
+.today-row { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.today-row b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.bar { height: 10px; border-radius: 5px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 5px; transition: width .5s ease; }
 .cry { display: flex; align-items: center; gap: 14px; }
 .cry svg { width: 110px; height: 110px; flex: none; }
 .cry p { margin: 0; color: var(--muted); }
@@ -137,18 +147,71 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 /* 섹션 공통 */
 .sec { display: flex; flex-direction: column; gap: 10px; }
 .sec h2 { font-size: calc(var(--fs) * .8); font-weight: 700; letter-spacing: .08em; color: var(--muted); margin: 0; }
-.dose-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); }
+.dose-list { list-style: none; margin: 0; padding: 0; background: var(--surface); border-radius: var(--radius); border: 1px solid var(--line); overflow: hidden; }
+.dose.cur { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }   /* 지금 먹어야 할 약 줄 강조 */
+.dose.empty { display: block; color: var(--muted); text-align: center; padding: 22px 18px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.sec-head .note { font-variant-numeric: tabular-nums; }
 .dose { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 14px 14px 14px 18px; }
 .dose + .dose { border-top: 1px solid var(--line); }
 .dose time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05em; }
 .dose .del { background: transparent; border: 0; color: var(--muted); font-size: .75em; padding: 6px 4px; text-decoration: underline; }
 .dose .del:hover { color: var(--alert); }
+.dose .del.confirm { color: var(--alert); font-weight: 700; text-decoration: none; }   /* '정말 삭제?' 확인 단계 */
 /* 약 추가 입력 칸 */
-.add-med { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: end; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.add-med { display: grid; grid-template-columns: minmax(150px, 1fr) minmax(0, 2fr); gap: 10px; align-items: end; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); padding: 14px 16px; }
 .add-med label { display: flex; flex-direction: column; gap: 4px; font-size: .8em; color: var(--muted); min-width: 0; }
 .add-med input { font: inherit; font-size: 1.15em; color: var(--ink); background: var(--bg); border: 2px solid var(--line); border-radius: 12px; padding: 8px 10px; width: 100%; min-width: 0; }
-.add-med .btn { min-height: 48px; }
-@media (max-width: 480px) { .add-med { grid-template-columns: 1fr 1fr; } .add-med .btn { grid-column: 1 / -1; } }
+.add-med .btn { min-height: 48px; grid-column: 1 / -1; }
+/* 기간 정하기: 체크하면 시작일·마지막 날 입력 칸이 나타남 */
+.add-med label.per-toggle { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 10px; color: var(--ink); cursor: pointer; }
+.add-med label.per-toggle input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
+.per-dates { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dose .nm small { display: block; font-size: .72em; color: var(--muted); }
+.dose .nm small b { color: var(--accent); font-weight: 700; }
+
+/* ── 복용 달력 ── */
+.cal { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.cal-nav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cal-nav b { font-family: var(--font-display); font-size: 1.1em; font-variant-numeric: tabular-nums; }
+.cal-nav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: var(--bg); font-size: 22px; line-height: 1; }
+.cal-week, .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.cal-week span { text-align: center; font-size: 13px; color: var(--muted); }
+.cal-week span:first-child { color: var(--alert); }
+.cd { position: relative; min-height: 54px; border: 1px solid transparent; border-radius: 10px; background: transparent; padding: 4px 2px 8px; display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 14px; font-family: "Noto Sans KR", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+.cd .n { font-weight: 700; }
+.cd .mk { font-size: 13px; font-weight: 900; line-height: 1.2; min-height: 1.2em; }
+.cd.blank { visibility: hidden; }
+.cd.future .n { color: var(--muted); font-weight: 400; }
+.cd.full { background: color-mix(in srgb, var(--accent) 16%, var(--surface)); }
+.cd.full .mk { color: var(--accent); }
+.cd.miss { background: color-mix(in srgb, var(--alert) 12%, var(--surface)); }
+.cd.miss .mk { color: var(--alert); font-size: 11px; }
+.cd.today { border: 2px solid var(--ink); }
+.cd.sel { box-shadow: 0 0 0 3px var(--pill); }
+.cd .dots { position: absolute; top: 3px; right: 3px; display: flex; gap: 2px; }
+.dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex: none; }
+.dot.add { background: var(--accent); }
+.dot.end { background: var(--muted); }
+.dot.star { background: var(--pill); }
+.cd .bars { position: absolute; left: 3px; right: 3px; bottom: 3px; display: flex; flex-direction: column; gap: 1px; }
+.cd .bars i { display: block; height: 3px; border-radius: 2px; }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); padding-top: 6px; border-top: 1px solid var(--line); }
+.cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.lg-box { width: 14px; height: 14px; border-radius: 4px; display: inline-block; }
+.lg-box.full { background: color-mix(in srgb, var(--accent) 30%, var(--surface)); }
+.lg-box.miss { background: color-mix(in srgb, var(--alert) 25%, var(--surface)); }
+.lg-bar { width: 16px; height: 4px; border-radius: 2px; background: #3D8BD9; display: inline-block; }
+/* 날짜를 누르면 나오는 그날의 자세한 기록 */
+.cal-detail { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; font-size: max(15px, calc(var(--fs) * .8)); }
+.cal-detail h3 { margin: 0; font-size: 1.1em; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.cal-detail h4 { margin: 0; font-size: .8em; color: var(--muted); letter-spacing: .05em; }
+.cal-detail ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cal-detail li { display: flex; align-items: center; gap: 8px; }
+.cal-detail li time { font-variant-numeric: tabular-nums; color: var(--muted); }
+.badge { font-size: .75em; padding: 2px 10px; border-radius: 999px; border: 1.5px solid currentColor; font-weight: 700; }
+.badge.full { color: var(--accent); } .badge.miss { color: var(--alert); } .badge.ing, .badge.none { color: var(--muted); }
+.ok { color: var(--accent); font-weight: 700; } .no { color: var(--alert); font-weight: 700; } .wait2 { color: var(--muted); }
 .dose .nm { min-width: 0; }
 .dose .nm span { color: var(--muted); font-size: .85em; margin-right: 6px; }
 .st { font-size: .8em; padding: 3px 12px; border-radius: 999px; white-space: nowrap; border: 1.5px solid currentColor; font-variant-numeric: tabular-nums; }
@@ -160,13 +223,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .streak { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
 .streak-top { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .streak-top b { font-family: var(--font-display); font-size: 1.4em; }
-.pills { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.pills { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; max-width: 420px; }
 .pills span { aspect-ratio: 2 / 1; max-width: 100%; border-radius: 999px; border: 2px dashed var(--line); display: grid; place-items: center; font-size: .65em; color: var(--muted); }
 .pills span.on { border: 0; background: linear-gradient(90deg, var(--pill) 50%, var(--accent) 50%); color: transparent; }
 
 /* 시연 도구 */
 details.demo { background: transparent; border: 2px dashed var(--line); border-radius: var(--radius); padding: 12px 16px; font-size: max(14px, calc(var(--fs) * .8)); }
 details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
+.foot { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; margin: 4px 0 0; }
+.wipe-btn { align-self: center; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 8px 18px; font-size: 14px; font-family: "Noto Sans KR", sans-serif; }
+.wipe-btn:hover { border-color: var(--alert); color: var(--alert); }
+.btn.danger { background: var(--alert); color: #fff; }
+.wipe-list { margin: 0; padding-left: 1.2em; color: var(--muted); font-size: .9em; }
 .demo-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
 .demo-grid button, .demo-grid select { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font: inherit; color: var(--ink); }
 .demo-grid button:hover { border-color: var(--accent); }
@@ -305,7 +373,7 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
     </div>
     <div class="tools">
       <button class="tool-btn" id="btnDialect" type="button">사투리 모드<small id="dialectLabel">표준어</small></button>
-      <button class="tool-btn" id="btnShop" type="button">포인트 상점<small>칭호·테마·쿠폰</small></button>
+      <button class="tool-btn" id="btnShop" type="button">포인트 상점<small>칭호·테마</small></button>
       <button class="tool-btn" id="btnSound" type="button">소리<small id="soundLabel">켜짐</small></button>
     </div>
   </header>
@@ -317,6 +385,10 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       <div class="meter" id="meter" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
     </div>
     <p class="nag-msg" id="nagMsg">혈압약 드실 시간이에요 😊</p>
+    <div class="today">
+      <div class="today-row"><span>오늘 <b id="doneCount">0 / 3</b> 복용</span><span id="untilNext">다음 약까지 4시간 57분</span></div>
+      <div class="bar" aria-hidden="true"><i id="doneBar"></i></div>
+    </div>
     <div class="cry" id="cry" hidden>
       <!-- 우는 손주 그림 -->
       <svg viewBox="0 0 120 120" aria-hidden="true">
@@ -336,13 +408,41 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
   <button class="eat" id="eatBtn" type="button"><span id="eatLabel">먹었어요</span><small id="eatSub">아침 혈압약</small></button>
 
   <section class="sec">
-    <h2>오늘 먹을 약</h2>
+    <div class="sec-head"><h2>오늘 먹을 약</h2><span class="note" id="doseCount">3개</span></div>
     <ul class="dose-list" id="doseList"></ul>
     <form class="add-med" id="addForm" autocomplete="off">
       <label for="medTime">시간<input type="time" id="medTime" value="21:00" required></label>
       <label for="medName">약 종류<input type="text" id="medName" placeholder="예: 관절약" maxlength="20" required></label>
+      <label class="per-toggle" for="usePeriod"><input type="checkbox" id="usePeriod"> 정해진 기간만 먹는 약이에요</label>
+      <div class="per-dates" id="perDates" hidden>
+        <label for="perStart">시작일<input type="date" id="perStart"></label>
+        <label for="perEnd">마지막 날<input type="date" id="perEnd"></label>
+      </div>
       <button class="btn" type="submit">약 추가</button>
     </form>
+  </section>
+
+  <section class="sec">
+    <div class="sec-head"><h2>복용 달력</h2><span class="note" id="calRate"></span></div>
+    <div class="cal">
+      <div class="cal-nav">
+        <button type="button" id="calPrev" aria-label="이전 달">‹</button>
+        <b id="calTitle">2026년 11월</b>
+        <button type="button" id="calNext" aria-label="다음 달">›</button>
+      </div>
+      <div class="cal-week" aria-hidden="true"><span>일</span><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <span><i class="lg-box full"></i>완주</span>
+        <span><i class="lg-box miss"></i>못 다 먹은 날</span>
+        <span><i class="lg-bar"></i>기간 약</span>
+        <span><i class="dot add"></i>약 추가</span>
+        <span><i class="dot end"></i>기간 끝·삭제</span>
+        <span><i class="dot star"></i>연속 기록</span>
+      </div>
+    </div>
+    <div class="cal-detail" id="calDetail"></div>
+    <p class="note">처음에 보이는 지난 기록은 시연용 예시예요. 날짜를 누르면 그날 기록을 볼 수 있어요.</p>
   </section>
 
   <section class="sec">
@@ -371,6 +471,8 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       <button type="button" id="resetAll">처음 상태로</button>
     </div>
   </details>
+  <button class="wipe-btn" type="button" id="wipeBtn">모든 기록 지우기 (초기화)</button>
+  <p class="foot">약 챙김이는 복용 시간을 알려 주는 도우미예요.<br>약의 양과 먹는 방법은 꼭 의사·약사와 상의하세요.</p>
 </div>
 
 <!-- 사투리 선택 -->
@@ -432,6 +534,24 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
     <div class="plus" id="celePlus">+10P</div>
     <p id="celeExtra" class="note"></p>
     <button class="btn" type="button" data-close>좋아요</button>
+  </div>
+</div>
+
+<!-- 초기화 확인 창 -->
+<div class="modal" id="mWipe" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="wipeT">
+    <h3 id="wipeT">모든 기록을 지울까요?</h3>
+    <p>이 기기에 저장된 아래 내용이 모두 지워지고, 앱이 처음 상태로 다시 시작해요. 되돌릴 수 없어요.</p>
+    <ul class="wipe-list">
+      <li>포인트, 칭호, 테마</li>
+      <li>추가한 약과 복용 기간</li>
+      <li>복용 달력 기록과 연속 기록</li>
+      <li>사투리 설정</li>
+    </ul>
+    <div class="row">
+      <button class="btn danger" type="button" id="wipeOk">모두 지우기</button>
+      <button class="btn ghost" type="button" data-close>취소</button>
+    </div>
   </div>
 </div>
 
@@ -499,19 +619,19 @@ const COPY = {
     name: '경상도', app: '약 챙김이',
     lv: [d => `다음 약은 ${hhmm(d.t)} ${d.name}이다`, () => '약 무울 시간이다~', () => '니 혹시 약 까뭇나?', () => '손주가 걱정한다 아이가 😢', () => '약! 약! 약! 퍼뜩 무라!!'],
     who: '손주', btn: '뭇다!', cele: '잘했데이! 오늘도 건강 지킸다 👏', allDone: '오늘 약 다 뭇네. 욕봤다!',
-    cat: ['니 진짜 뭇나?', '거짓말하모 안 된데이…'], type: '먹었습니다.', early: '아직 약 무울 때 아이다'
+    cat: ['니 진짜 뭇나?', '거짓말하모 안 된데이…'], type: '묵었습니더.', early: '아직 약 무울 때 아이다'
   },
   jl: {
     name: '전라도', app: '약 챙김이',
     lv: [d => `다음 약은 ${hhmm(d.t)} ${d.name}이랑께요`, () => '약 잡술 시간이어라~', () => '혹시 잊어부렀당가?', () => '손주가 겁나게 걱정허고 있당께 😢', () => '약! 약! 약! 언능 잡숴!!'],
     who: '손주', btn: '먹었어라!', cele: '워메, 잘혔네! 오늘도 건강 지켰당께 👏', allDone: '오늘 약 다 잡쉈어라. 겁나 잘했당께!',
-    cat: ['참말로 잡쉈소?', '쪼까 의심스럽당께…'], type: '먹었습니다.', early: '아직 약 잡술 때가 아니랑께'
+    cat: ['참말로 잡쉈소?', '쪼까 의심스럽당께…'], type: '먹었어라.', early: '아직 약 잡술 때가 아니랑께'
   },
   cc: {
     name: '충청도', app: '약 챙김이',
     lv: [d => `다음 약은 ${hhmm(d.t)} ${d.name}이유`, () => '약 드실 시간이유~ 천천히 드셔유', () => '혹시… 잊어버리신 건 아니쥬?', () => '손주가 걱정허구 있슈… 😢', () => '약… 약… 약…! 인저 좀 드셔유!!'],
     who: '손주', btn: '먹었슈~', cele: '잘허셨슈~ 오늘도 건강 지키셨네유 👏', allDone: '오늘 약 다 드셨슈. 고생허셨슈~',
-    cat: ['진짜 드셨대유?', '증말유…? 괜찮은 거쥬?'], type: '먹었습니다.', early: '아직 약 드실 때 아니유~ 천천히 혀유'
+    cat: ['진짜 드셨대유?', '증말유…? 괜찮은 거쥬?'], type: '먹었슈.', early: '아직 약 드실 때 아니유~ 천천히 혀유'
   },
   baby: {
     app: '냠냠 약 친구',
@@ -563,36 +683,88 @@ const SHOP = {
 };
 
 /* ───────── 3. 상태 ───────── */
-// 처음 들어 있는 예시 약 3개 (사용자가 추가·삭제 가능)
-const DEFAULT_MEDS = [
-  { id: 1, name: '혈압약', t: 8 * 60 },
-  { id: 2, name: '비타민', t: 13 * 60 },
-  { id: 3, name: '당뇨약', t: 19 * 60 }
-];
-const START = { points: 120, streak: 6, owned: { title: ['newbie'], skin: ['base'] }, title: 'newbie', skin: 'base', dialect: 'std', meds: DEFAULT_MEDS };
+// ── 날짜 도우미: 날짜는 'YYYY-MM-DD' 글자로 저장 (글자끼리 크기 비교가 곧 날짜 비교가 됨) ──
+function ymd(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function parseYmd(str) { const [y, m, d] = str.split('-').map(Number); return new Date(y, m - 1, d); }
+function addDays(str, n) { const d = parseYmd(str); d.setDate(d.getDate() + n); return ymd(d); }
+function prettyDate(str) { const d = parseYmd(str); return `${d.getMonth() + 1}월 ${d.getDate()}일 (${'일월화수목금토'[d.getDay()]})`; }
+function shortDate(str) { const d = parseYmd(str); return `${d.getMonth() + 1}/${d.getDate()}`; }
+function activeOn(m, date) { return (!m.start || m.start <= date) && (!m.end || date <= m.end); }   // 그 날짜에 먹는 약인지
+const TODAY = ymd(new Date());
+const PERIOD_COLORS = ['#3D8BD9', '#E07A5F', '#9B6BD3', '#2BA39A', '#D9A21B'];   // 기간 약 막대 색
+
+function makeStart(today) {
+  // 처음 상태: 매일 먹는 약 3개 + 5일만 먹는 감기약, 그리고 지난 12일 동안의 예시 기록
+  const D = n => addDays(today, n);
+  const meds = [
+    { id: 1, name: '혈압약', t: 8 * 60 },
+    { id: 4, name: '감기약', t: 12 * 60 + 30, start: D(-2), end: D(2) },
+    { id: 2, name: '비타민', t: 13 * 60 },
+    { id: 3, name: '당뇨약', t: 19 * 60 }
+  ];
+  const periods = [
+    { id: 5, name: '소화제', start: D(-11), end: D(-8), color: PERIOD_COLORS[1] },
+    { id: 4, name: '감기약', start: D(-2), end: D(2), color: PERIOD_COLORS[0] }
+  ];
+  const events = [
+    { date: D(-12), type: 'add', name: '혈압약', note: '매일' },
+    { date: D(-12), type: 'add', name: '비타민', note: '매일' },
+    { date: D(-12), type: 'add', name: '당뇨약', note: '매일' },
+    { date: D(-11), type: 'add', name: '소화제', note: `${shortDate(D(-11))}~${shortDate(D(-8))}` },
+    { date: D(-8), type: 'end', name: '소화제' },
+    { date: D(-2), type: 'add', name: '감기약', note: `${shortDate(D(-2))}~${shortDate(D(2))}` }
+  ];
+  // 날마다 먹은 약 기록 (n일 전 → 못 먹은 약 이름 목록)
+  const missed = { 7: ['당뇨약'], 9: ['비타민', '당뇨약'] };
+  const history = {};
+  for (let n = 12; n >= 1; n--) {
+    const items = [['혈압약', 480], ['비타민', 780], ['당뇨약', 1140]];
+    if (n >= 8 && n <= 11) items.splice(1, 0, ['소화제', 720]);
+    if (n <= 2) items.splice(1, 0, ['감기약', 750]);
+    history[D(-n)] = { items: items.map(([name, t]) => ({ name, t, taken: !(missed[n] || []).includes(name) })) };
+  }
+  return { points: 120, streak: 6, owned: { title: ['newbie'], skin: ['base'] }, title: 'newbie', skin: 'base', dialect: 'std',
+    meds, periods, events, history, date: today, dayDone: false };
+}
 const S = {
-  ...structuredClone(START),
+  ...makeStart(TODAY),
   min: 8 * 60 + 3,   // 가상 시계 (하루 0시부터 몇 분 지났는지). 시작은 08:03
-  day: 1, speed: 1, dayDone: false, sound: true, voice: false, age: 'elder',
+  speed: 1, sound: true, voice: false, age: 'elder',
   demo: true, sirenSkip: null,   // demo: 시연 모드 켜짐 여부, sirenSkip: 경보를 건너뛴 약의 번호
   doses: []
 };
-function makeDose(m) { return { id: m.id, name: m.name, t: m.t, when: whenOf(m.t), taken: null }; }
+function makeDose(m) { return { id: m.id, name: m.name, t: m.t, when: whenOf(m.t), start: m.start, end: m.end, taken: null }; }
 function makeDoses(meds) {
-  // 약 설정 목록으로 오늘 먹을 약을 시간 순서대로 만듦
-  return meds.map(makeDose).sort((a, b) => a.t - b.t);
+  // 약 설정 목록 중 '오늘 먹는 약'만 골라 시간 순서대로 만듦
+  return meds.filter(m => activeOn(m, S.date)).map(makeDose).sort((a, b) => a.t - b.t);
 }
-// 저장된 포인트·칭호 등을 불러오기 (저장이 막혀 있어도 앱은 동작)
+// 저장된 포인트·칭호·약·달력 기록 불러오기 (저장이 막혀 있어도 앱은 동작)
+let savedDoses = null;
 try {
   const saved = JSON.parse(localStorage.getItem('yak-state') || 'null');
-  if (saved) Object.assign(S, saved);
+  if (saved) {
+    Object.assign(S, saved);
+    if (!saved.history) Object.assign(S, (({ history, events, periods, date }) => ({ history, events, periods, date }))(makeStart(TODAY)));   // 예전 버전 저장분에는 달력 기록이 없음
+    savedDoses = saved.doses || null;
+  }
 } catch (e) {}
-S.doses = makeDoses(S.meds);
+S.doses = savedDoses || makeDoses(S.meds);
 function save() {
   try {
-    const { points, streak, owned, title, skin, dialect, meds } = S;
-    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds }));
+    const { points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone } = S;
+    localStorage.setItem('yak-state', JSON.stringify({ points, streak, owned, title, skin, dialect, meds, periods, events, history, date, doses, dayDone }));
   } catch (e) {}
+}
+function finishDay() {
+  // 하루가 끝날 때 오늘 먹은 약 기록을 달력에 저장
+  if (S.doses.length) S.history[S.date] = { items: S.doses.map(d => ({ name: d.name, t: d.t, taken: !!d.taken })) };
+}
+function expireMeds() {
+  // 마지막 날이 지난 기간 약은 자동으로 목록에서 빼고, 달력에 '기간 끝' 기록을 남김
+  const gone = S.meds.filter(m => m.end && m.end < S.date);
+  gone.forEach(m => S.events.push({ date: m.end, type: 'end', name: m.name }));
+  S.meds = S.meds.filter(m => !(m.end && m.end < S.date));
+  return gone.map(m => m.name);
 }
 
 /* ───────── 4. 도우미 함수 ───────── */
@@ -631,6 +803,10 @@ function toast(msg) {
 }
 function open(id) { $(id).hidden = false; }
 function close(id) { $(id).hidden = true; }
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  document.querySelectorAll('.modal:not([hidden]):not([data-lock])').forEach(m => m.hidden = true);
+});
 document.querySelectorAll('.modal').forEach(m => {
   m.addEventListener('click', e => {
     // data-lock이 붙은 창(고양이 인증)은 바깥 배경을 눌러도 닫히지 않음
@@ -659,6 +835,19 @@ function sirenOn() {
   osc.start(); lfo.start();
   siren = { osc, lfo };
 }
+function chime(notes) {
+  // 짧은 '띵동' 소리: notes = [주파수, ...]를 차례로 부드럽게 재생
+  if (!actx || !S.sound) return;
+  try {
+    const t0 = actx.currentTime;
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(), t = t0 + i * 0.16;
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.25, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + 0.5);
+    });
+  } catch (e) {}
+}
 function sirenOff() { if (siren) { try { siren.osc.stop(); siren.lfo.stop(); } catch (e) {} siren = null; } }
 function speak(text) {
   // '음성 읽기'가 켜져 있으면 잔소리를 소리 내어 읽기 (기기가 지원할 때만)
@@ -671,7 +860,8 @@ function speak(text) {
 }
 
 /* ───────── 6. 화면 그리기 ───────── */
-let lastLv = -1, lastMsg = '';
+let lastLv = -1, lastMsg = '', lastListHtml = '';
+let delAsk = null;   // 삭제 확인 중인 약 { id, until(확인 유효 시각) }
 function render() {
   const c = C(), lv = level(), d = dueDose(), n = nextDose();
   const root = document.documentElement;
@@ -679,7 +869,7 @@ function render() {
   $('appName').textContent = c.app;
   document.title = c.app;
   $('clock').textContent = hhmm(S.min);
-  $('dayLabel').textContent = S.day + '일째';
+  $('dayLabel').textContent = prettyDate(S.date);
   $('ptName').textContent = PT().name;
   $('points').textContent = S.points + PT().unit;
   $('titleChip').textContent = SHOP.title.find(t => t.id === S.title).name;
@@ -720,17 +910,37 @@ function render() {
   $('demoToggle').querySelector('b').textContent = S.demo ? '켜짐' : '꺼짐';
 
   // 단계가 바뀌면 음성으로 읽기
-  if (lv !== lastLv || msg !== lastMsg) { if (lv > 0 && lv !== lastLv) speak(msg); lastLv = lv; lastMsg = msg; }
+  if (lv !== lastLv || msg !== lastMsg) {
+    if (lv > 0 && lv !== lastLv) speak(msg);
+    if (lv > lastLv && lv >= 1 && lv <= 3 && lastLv !== -1) chime(lv === 1 ? [880, 660] : [880, 660, 880, 660].slice(0, lv + 1));   // 단계가 오를 때 '띵동'
+    lastLv = lv; lastMsg = msg;
+  }
 
-  // 오늘 약 목록
-  $('doseList').innerHTML = S.doses.map(x => {
+  // 오늘 진행 상황
+  const doneN = S.doses.filter(x => x.taken).length, total = S.doses.length;
+  $('doneCount').textContent = `${doneN} / ${total}`;
+  $('doneBar').style.width = total ? (doneN / total * 100) + '%' : '0%';
+  $('doseCount').textContent = total ? `${doneN}개 먹음 · 전체 ${total}개` : '';
+  const up = S.doses.find(x => !x.taken && x.t > S.min);
+  if (up) {
+    const left = Math.ceil(up.t - S.min), h = Math.floor(left / 60), m = left % 60;
+    $('untilNext').textContent = `다음 약까지 ${h ? h + '시간 ' : ''}${m}분`;
+  } else $('untilNext').textContent = total && doneN === total ? '오늘 약 끝!' : '';
+
+  // 오늘 약 목록 (내용이 바뀔 때만 다시 그려서 버튼 누름·포커스가 끊기지 않게)
+  const html = !S.doses.length ? '<li class="dose empty">등록된 약이 없어요. 아래에서 시간과 약 종류를 넣어 추가해 주세요.</li>' : S.doses.map(x => {
     let st;
     if (x.taken) st = `<span class="st done">먹음 ${hhmm(x.taken)}</span>`;
     else if (S.min - x.t >= 1) st = `<span class="st late">${Math.floor(S.min - x.t)}분 지남</span>`;
     else if (S.min >= x.t) st = `<span class="st now">지금</span>`;   // 약 시간부터 1분 동안은 '지금'
     else st = `<span class="st wait">예정</span>`;
-    return `<li class="dose"><time>${hhmm(x.t)}</time><div class="nm"><span>${x.when}</span>${esc(x.name)}</div>${st}<button class="del" type="button" data-del="${x.id}" aria-label="${esc(x.name)} 삭제">삭제</button></li>`;
+    const asking = delAsk && delAsk.id === x.id;   // '정말 삭제?' 확인 중인 줄
+    // 기간 약이면 '~11/26까지 · 3일 남음'을 이름 아래에 표시
+    const left = x.end ? Math.round((parseYmd(x.end) - parseYmd(S.date)) / 864e5) : null;
+    const per = x.end ? `<small>~${shortDate(x.end)}까지 · ${left === 0 ? '<b>오늘이 마지막 날</b>' : left + '일 남음'}</small>` : '';
+    return `<li class="dose${tg && tg.id === x.id ? ' cur' : ''}"><time>${hhmm(x.t)}</time><div class="nm"><span>${x.when}</span>${esc(x.name)}${per}</div>${st}<button class="del${asking ? ' confirm' : ''}" type="button" data-del="${x.id}" aria-label="${esc(x.name)} 삭제">${asking ? '정말 삭제?' : '삭제'}</button></li>`;
   }).join('');
+  if (html !== lastListHtml) { $('doseList').innerHTML = html; lastListHtml = html; }
 
   // 연속 기록 (7칸 알약)
   $('streakText').textContent = `${S.streak}일 연속`;
@@ -739,7 +949,81 @@ function render() {
   $('streakNote').textContent = S.dayDone ? '오늘 기록 완료!' : (S.streak < 7 ? `${7 - S.streak}일 더 하면 '알약 마스터'` : '하루 약을 다 드시면 1일이 올라가요');
 
   $('grayscale').hidden = S.age !== 'ancestor';
+  renderCal();
 }
+
+/* ───────── 복용 달력 ───────── */
+let calSel = S.date, calMonth = S.date.slice(0, 7), lastCalHtml = '';
+function dayInfo(date) {
+  // 그날의 복용 기록: 오늘은 지금 상태, 지난날은 저장된 기록
+  const items = date === S.date ? S.doses.map(d => ({ name: d.name, t: d.t, taken: !!d.taken })) : (S.history[date] || {}).items;
+  if (!items || !items.length) return null;
+  const done = items.filter(x => x.taken).length;
+  const status = done === items.length ? 'full' : (date === S.date ? 'ing' : 'miss');   // 완주 / 오늘 진행 중 / 못 다 먹음
+  return { items, done, total: items.length, status };
+}
+function renderCal() {
+  const [y, m] = calMonth.split('-').map(Number);
+  const first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+  let cells = '';
+  for (let i = 0; i < first.getDay(); i++) cells += '<span class="cd blank"></span>';   // 1일 앞의 빈칸
+  let fullN = 0, missN = 0;
+  for (let d = 1; d <= days; d++) {
+    const date = `${calMonth}-${String(d).padStart(2, '0')}`;
+    const info = date <= S.date ? dayInfo(date) : null;
+    if (info && info.status === 'full') fullN++;
+    if (info && info.status === 'miss') missN++;
+    const evs = S.events.filter(e => e.date === date);
+    const dots = [...new Set(evs.map(e => e.type === 'add' ? 'add' : e.type === 'streak' ? 'star' : 'end'))].map(k => `<i class="dot ${k}"></i>`).join('');
+    const bars = S.periods.filter(p => p.start <= date && date <= p.end).slice(0, 3).map(p => `<i style="background:${p.color}"></i>`).join('');
+    const mk = !info ? '' : info.status === 'full' ? '✓' : info.status === 'miss' ? `${info.done}/${info.total}` : '';
+    const cls = ['cd', info ? info.status : '', date > S.date ? 'future' : '', date === S.date ? 'today' : '', date === calSel ? 'sel' : ''].join(' ');
+    cells += `<button type="button" class="${cls}" data-date="${date}" aria-label="${prettyDate(date)}"><span class="n">${d}</span><span class="mk">${mk}</span><span class="dots">${dots}</span><span class="bars">${bars}</span></button>`;
+  }
+  const html = `${y}년 ${m}월|${cells}|${fullN}|${missN}|${calDetailHtml(calSel)}`;
+  if (html === lastCalHtml) return;   // 바뀐 게 없으면 다시 그리지 않음
+  lastCalHtml = html;
+  $('calTitle').textContent = `${y}년 ${m}월`;
+  $('calGrid').innerHTML = cells;
+  $('calRate').textContent = `이번 달 완주 ${fullN}일 · 못 다 먹은 날 ${missN}일`;
+  $('calDetail').innerHTML = calDetailHtml(calSel);
+}
+function calDetailHtml(date) {
+  // 고른 날짜의 자세한 기록: 복용 결과, 기간 약, 그날 있었던 일
+  const info = date <= S.date ? dayInfo(date) : null;
+  const badge = date > S.date ? '<span class="badge none">예정</span>'
+    : !info ? '<span class="badge none">기록 없음</span>'
+    : info.status === 'full' ? '<span class="badge full">완주</span>'
+    : info.status === 'ing' ? `<span class="badge ing">진행 중 ${info.done}/${info.total}</span>`
+    : `<span class="badge miss">못 다 먹음 ${info.done}/${info.total}</span>`;
+  let out = `<h3>${prettyDate(date)} ${badge}</h3>`;
+  if (info) {
+    out += '<h4>먹은 약</h4><ul>' + info.items.map(x => `<li><time>${hhmm(x.t)}</time>${esc(x.name)} ${x.taken ? '<span class="ok">✓ 먹음</span>' : date === S.date ? '<span class="wait2">아직</span>' : '<span class="no">✕ 못 먹음</span>'}</li>`).join('') + '</ul>';
+  } else if (date > S.date) {
+    const plan = S.meds.filter(m => activeOn(m, date)).sort((a, b) => a.t - b.t);
+    out += '<h4>먹을 예정인 약</h4>' + (plan.length ? '<ul>' + plan.map(x => `<li><time>${hhmm(x.t)}</time>${esc(x.name)}</li>`).join('') + '</ul>' : '<p class="note">예정된 약이 없어요.</p>');
+  }
+  const pers = S.periods.filter(p => p.start <= date && date <= p.end);
+  if (pers.length) out += '<h4>복용 기간 중인 약</h4><ul>' + pers.map(p => `<li><i class="lg-bar" style="background:${p.color}"></i>${esc(p.name)} <span class="note">${shortDate(p.start)}~${shortDate(p.end)}${p.start === date ? ' · 시작한 날' : ''}${p.end === date ? ' · 마지막 날' : ''}</span></li>`).join('') + '</ul>';
+  const evs = S.events.filter(e => e.date === date);
+  if (evs.length) out += '<h4>이날 있었던 일</h4><ul>' + evs.map(e => {
+    if (e.type === 'add') return `<li><i class="dot add"></i>새 약 추가: ${esc(e.name)} <span class="note">(${esc(e.note || '')})</span></li>`;
+    if (e.type === 'end') return `<li><i class="dot end"></i>복용 기간 끝: ${esc(e.name)} <span class="note">(목록에서 자동으로 빠짐)</span></li>`;
+    if (e.type === 'remove') return `<li><i class="dot end"></i>약 삭제: ${esc(e.name)}</li>`;
+    return `<li><i class="dot star"></i>${esc(e.name)} 달성!</li>`;
+  }).join('') + '</ul>';
+  return out;
+}
+$('calGrid').addEventListener('click', e => {
+  const b = e.target.closest('[data-date]'); if (!b) return;
+  calSel = b.dataset.date; renderCal();
+});
+function moveMonth(n) {
+  const [y, m] = calMonth.split('-').map(Number);
+  calMonth = ymd(new Date(y, m - 1 + n, 1)).slice(0, 7); renderCal();
+}
+$('calPrev').addEventListener('click', () => moveMonth(-1));
+$('calNext').addEventListener('click', () => moveMonth(1));
 
 /* ───────── 7. 가상 시계 ───────── */
 let lastTick = Date.now();
@@ -759,14 +1043,34 @@ $('jumpNext').addEventListener('click', () => {
   S.min = n.t - 1; render();
 });
 $('nextDay').addEventListener('click', () => {
+  const msgs = [];
+  finishDay();
   // 하루를 다 못 채우고 넘어가면 연속 기록이 0으로
-  if (!S.dayDone) { S.streak = 0; toast('어제 약을 다 못 드셔서 연속 기록이 0일로 돌아갔어요'); }
-  S.day++; S.dayDone = false; S.doses = makeDoses(S.meds); S.min = 7 * 60 + 58; save(); render();
+  if (!S.dayDone && S.doses.length) { S.streak = 0; msgs.push('어제 약을 다 못 드셔서 연속 기록이 0일로 돌아갔어요'); }
+  S.date = addDays(S.date, 1);
+  const gone = expireMeds();
+  if (gone.length) msgs.push(`복용 기간이 끝나서 목록에서 뺐어요: ${gone.join(', ')}`);
+  S.dayDone = false; S.doses = makeDoses(S.meds); S.min = 7 * 60 + 58; S.sirenSkip = null;
+  calSel = S.date; calMonth = S.date.slice(0, 7);
+  save(); render();
+  toast(msgs.length ? msgs.join(' / ') : `${prettyDate(S.date)} 아침이에요`);
 });
-$('resetAll').addEventListener('click', () => {
-  Object.assign(S, structuredClone(START), { min: 8 * 60 + 3, day: 1, dayDone: false });
+$('resetAll').addEventListener('click', () => open('mWipe'));   // 시연 도구의 '처음 상태로'도 같은 초기화 창을 엶
+$('wipeBtn').addEventListener('click', () => open('mWipe'));
+$('wipeOk').addEventListener('click', async () => {
+  // 1) 이 앱이 브라우저에 저장한 모든 것을 지움 (저장소·세션 저장소·캐시 저장소·IndexedDB)
+  try { localStorage.clear(); } catch (e) {}
+  try { sessionStorage.clear(); } catch (e) {}
+  try { if (window.caches) for (const k of await caches.keys()) await caches.delete(k); } catch (e) {}
+  try { if (indexedDB.databases) for (const db of await indexedDB.databases()) indexedDB.deleteDatabase(db.name); } catch (e) {}
+  // 2) 화면 속 상태도 처음으로 되돌림 (새로고침이 막힌 환경 대비)
+  sirenOff();
+  Object.assign(S, makeStart(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder' });
   S.doses = makeDoses(S.meds);
-  save(); render(); toast('처음 상태로 돌렸어요');
+  calSel = S.date; calMonth = S.date.slice(0, 7);
+  close('mWipe'); render(); toast('모든 기록을 지우고 처음 상태로 돌렸어요');
+  // 3) 페이지를 새로 불러와 완전히 처음부터 시작
+  setTimeout(() => { try { location.reload(); } catch (e) {} }, 900);
 });
 $('voiceBtn').addEventListener('click', e => {
   S.voice = !S.voice; e.target.textContent = '음성 읽기: ' + (S.voice ? '켜짐' : '꺼짐');
@@ -799,19 +1103,47 @@ $('addForm').addEventListener('submit', e => {
   const t = h * 60 + m;
   if (S.meds.some(x => x.t === t && x.name === name)) return toast('같은 시간에 같은 약이 이미 있어요');
   const med = { id: Date.now(), name, t };
+  // 기간 약이면 시작일·마지막 날 확인
+  if ($('usePeriod').checked) {
+    const st = $('perStart').value, en = $('perEnd').value;
+    if (!st || !en) return toast('시작일과 마지막 날을 모두 골라 주세요');
+    if (en < st) return toast('마지막 날이 시작일보다 앞설 수 없어요');
+    if (en < S.date) return toast('마지막 날이 이미 지났어요. 날짜를 다시 골라 주세요');
+    med.start = st; med.end = en;
+    S.periods.push({ id: med.id, name, start: st, end: en, color: PERIOD_COLORS[S.periods.length % PERIOD_COLORS.length] });
+  }
   S.meds.push(med);
-  S.doses.push(makeDose(med));            // 오늘 목록에도 바로 추가
-  S.doses.sort((a, b) => a.t - b.t);
-  $('medName').value = '';
+  S.events.push({ date: S.date, type: 'add', name, note: med.end ? `${shortDate(med.start)}~${shortDate(med.end)}` : '매일' });   // 달력에 '약 추가' 기록
+  const today = activeOn(med, S.date);
+  if (today) { S.doses.push(makeDose(med)); S.doses.sort((a, b) => a.t - b.t); S.dayDone = false; }   // 오늘 먹는 약이면 오늘 목록에도 바로 추가
+  $('medName').value = ''; $('usePeriod').checked = false; $('perDates').hidden = true;
   save(); render();
-  toast(`${hhmm(t)} ${name}을(를) 추가했어요${t <= S.min ? ' (이미 지난 시간이라 바로 알림이 시작돼요)' : ''}`);
+  if (!today) toast(`${name}을(를) 추가했어요. ${prettyDate(med.start)}부터 목록에 나타나요`);
+  else toast(`${hhmm(t)} ${name}을(를) 추가했어요${med.end ? ` (${shortDate(med.end)}까지)` : ''}${t <= S.min ? ' · 이미 지난 시간이라 바로 알림이 시작돼요' : ''}`);
+});
+$('usePeriod').addEventListener('change', e => {
+  // 체크하면 시작일=오늘, 마지막 날=5일째로 미리 채워 둠
+  $('perDates').hidden = !e.target.checked;
+  if (e.target.checked) { $('perStart').value = S.date; $('perEnd').value = addDays(S.date, 4); $('perEnd').min = S.date; }
 });
 $('doseList').addEventListener('click', e => {
   const b = e.target.closest('[data-del]'); if (!b) return;
   const id = +b.dataset.del;
+  // 실수로 지우지 않도록: 첫 번째 누름은 '정말 삭제?'로 바뀌고, 3초 안에 한 번 더 누르면 삭제
+  if (!delAsk || delAsk.id !== id || Date.now() > delAsk.until) {
+    delAsk = { id, until: Date.now() + 3000 };
+    render();
+    setTimeout(() => { if (delAsk && delAsk.id === id && Date.now() > delAsk.until) { delAsk = null; render(); } }, 3100);
+    return;
+  }
+  delAsk = null;
   const d = S.doses.find(x => x.id === id);
   S.meds = S.meds.filter(x => x.id !== id);
   S.doses = S.doses.filter(x => x.id !== id);
+  if (d) S.events.push({ date: S.date, type: 'remove', name: d.name });   // 달력에 '삭제' 기록
+  const per = S.periods.find(x => x.id === id);
+  if (per && per.end > S.date) per.end = S.date;   // 기간 약을 중간에 지우면 막대도 오늘까지만
+  if (S.doses.length && S.doses.every(x => x.taken) && !S.dayDone) { S.dayDone = true; S.streak++; }   // 남은 약을 이미 다 먹었다면 오늘 완주
   save(); render();
   if (d) toast(`${d.name}을(를) 목록에서 지웠어요`);
 });
@@ -916,6 +1248,7 @@ function confirmDose(dose) {
     S.dayDone = true; S.streak++; gain += 30;
     extra.push(`오늘 약 완주! 보너스 30${PT().unit} · ${S.streak}일 연속`);
     if (S.streak === 7) {
+      S.events.push({ date: S.date, type: 'streak', name: '7일 연속 완주' });
       if (!S.owned.title.includes('master')) { S.owned.title.push('master'); S.title = 'master'; extra.push("7일 연속 달성! '알약 마스터' 칭호를 받았어요"); }
       else { gain += 50; extra.push(`7일 연속 달성! 칭호가 이미 있어서 50${PT().unit}${PT().obj} 더 드려요`); }
     }
@@ -927,6 +1260,7 @@ function confirmDose(dose) {
   $('celeExtra').textContent = extra.join(' / ');
   open('mCele');
   confetti();
+  chime([660, 880, 1320]);   // 축하 '띠리링'
 }
 
 /* 폭죽 효과: 색종이 조각을 위로 쏘아 올렸다가 떨어뜨림 */
