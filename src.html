@@ -153,6 +153,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .sec-head .note { font-variant-numeric: tabular-nums; }
 .dose { display: grid; grid-template-columns: auto 1fr auto auto; align-items: center; gap: 12px; padding: 14px 14px 14px 18px; }
+.dose .acts { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }   /* 수정·삭제 버튼을 위아래로 */
+.dose .edit { background: transparent; border: 0; color: var(--accent); font-size: .75em; padding: 4px; text-decoration: underline; font-weight: 700; }
+.dose.later { opacity: .75; }   /* 아직 시작 전인 약 */
+.dose-sub { padding: 8px 18px; font-size: .75em; color: var(--muted); background: var(--bg); border-top: 1px solid var(--line); }
+.edit-form { border: 0; padding: 0; background: transparent; }
+.edit-form .row { grid-column: 1 / -1; }
 .dose + .dose { border-top: 1px solid var(--line); }
 .dose time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.05em; }
 .dose .del { background: transparent; border: 0; color: var(--muted); font-size: .75em; padding: 6px 4px; text-decoration: underline; }
@@ -202,6 +208,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .dot.add { background: var(--accent); }
 .dot.end { background: var(--muted); }
 .dot.star { background: var(--pill); }
+.dot.edit { background: transparent; border: 2px solid var(--accent); box-sizing: border-box; }
 .cd .bars { position: absolute; left: 3px; right: 3px; bottom: 3px; display: flex; flex-direction: column; gap: 1px; }
 .cd .bars i { display: block; height: 3px; border-radius: 2px; }
 .cal-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); padding-top: 6px; border-top: 1px solid var(--line); }
@@ -463,6 +470,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         <span><i class="lg-box miss"></i>못 다 먹은 날</span>
         <span><i class="lg-bar"></i>기간 약</span>
         <span><i class="dot add"></i>약 추가</span>
+        <span><i class="dot edit"></i>약 수정</span>
         <span><i class="dot end"></i>기간 끝·삭제</span>
         <span><i class="dot star"></i>연속 기록</span>
       </div>
@@ -560,6 +568,32 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     <div class="plus" id="celePlus">+10P</div>
     <p id="celeExtra" class="note"></p>
     <button class="btn" type="button" data-close>좋아요</button>
+  </div>
+</div>
+
+<!-- 약 수정 창 -->
+<div class="modal" id="mEdit" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="editT">
+    <h3 id="editT">약 정보 수정</h3>
+    <form class="add-med edit-form" id="editForm" autocomplete="off">
+      <label for="eTime">시간<input type="time" id="eTime" required></label>
+      <label for="eName">약 종류<input type="text" id="eName" maxlength="20" required></label>
+      <label class="per-toggle" for="eUsePeriod"><input type="checkbox" id="eUsePeriod"> 정해진 기간만 먹는 약이에요</label>
+      <div class="per-dates" id="ePerDates" hidden>
+        <div class="per-days">
+          <label for="ePerDays">며칠분 약인가요?<span class="days-in"><input type="number" id="ePerDays" min="1" max="365" inputmode="numeric" value="5">일치</span></label>
+          <div class="quick" role="group" aria-label="자주 쓰는 일수">
+            <button type="button" data-days="3">3일</button>
+            <button type="button" data-days="5">5일</button>
+            <button type="button" data-days="7">7일</button>
+            <button type="button" data-days="14">14일</button>
+          </div>
+        </div>
+        <label for="ePerStart">시작일<input type="date" id="ePerStart"></label>
+        <label for="ePerEnd">마지막 날<input type="date" id="ePerEnd"></label>
+      </div>
+      <div class="row"><button class="btn" type="submit">저장</button><button class="btn ghost" type="button" data-close>취소</button></div>
+    </form>
   </div>
 </div>
 
@@ -981,7 +1015,7 @@ function render() {
   } else $('untilNext').textContent = total && doneN === total ? '오늘 약 끝!' : '';
 
   // 오늘 약 목록 (내용이 바뀔 때만 다시 그려서 버튼 누름·포커스가 끊기지 않게)
-  const html = !S.doses.length ? '<li class="dose empty">등록된 약이 없어요. 아래에서 시간과 약 종류를 넣어 추가해 주세요.</li>' : S.doses.map(x => {
+  const html = !S.doses.length ? '<li class="dose empty">오늘 먹을 약이 없어요. 아래에서 시간과 약 종류를 넣어 추가해 주세요.</li>' + laterHtml() : S.doses.map(x => {
     let st;
     if (x.taken) st = `<span class="st done">먹음 ${hhmm(x.taken)}</span>`;
     else if (S.min - x.t >= 1) st = `<span class="st late">${Math.floor(S.min - x.t)}분 지남</span>`;
@@ -991,8 +1025,8 @@ function render() {
     // 기간 약이면 '~11/26까지 · 3일 남음'을 이름 아래에 표시
     const left = x.end ? Math.round((parseYmd(x.end) - parseYmd(S.date)) / 864e5) : null;
     const per = x.end ? `<small>~${shortDate(x.end)}까지 · ${left === 0 ? '<b>오늘이 마지막 날</b>' : left + '일 남음'}</small>` : '';
-    return `<li class="dose${tg && tg.id === x.id ? ' cur' : ''}"><time>${hhmm(x.t)}</time><div class="nm"><span>${x.when}</span>${esc(x.name)}${per}</div>${st}<button class="del${asking ? ' confirm' : ''}" type="button" data-del="${x.id}" aria-label="${esc(x.name)} 삭제">${asking ? '정말 삭제?' : '삭제'}</button></li>`;
-  }).join('');
+    return `<li class="dose${tg && tg.id === x.id ? ' cur' : ''}"><time>${hhmm(x.t)}</time><div class="nm"><span>${x.when}</span>${esc(x.name)}${per}</div>${st}${actsHtml(x)}</li>`;
+  }).join('') + laterHtml();
   if (html !== lastListHtml) { $('doseList').innerHTML = html; lastListHtml = html; }
 
   // 연속 기록 (7칸 알약)
@@ -1004,6 +1038,20 @@ function render() {
   $('grayscale').hidden = S.age !== 'ancestor';
   $('calNote').textContent = S.example === false ? '날짜를 누르면 그날 기록을 볼 수 있어요.' : '처음에 보이는 지난 기록은 시연용 예시예요. 날짜를 누르면 그날 기록을 볼 수 있어요.';
   renderCal();
+}
+
+function actsHtml(x) {
+  // 약 줄 오른쪽의 '수정'·'삭제' 버튼
+  const asking = delAsk && delAsk.id === x.id;   // '정말 삭제?' 확인 중인 줄
+  return `<span class="acts"><button class="edit" type="button" data-edit="${x.id}" aria-label="${esc(x.name)} 수정">수정</button>` +
+    `<button class="del${asking ? ' confirm' : ''}" type="button" data-del="${x.id}" aria-label="${esc(x.name)} 삭제">${asking ? '정말 삭제?' : '삭제'}</button></span>`;
+}
+function laterHtml() {
+  // 아직 시작 전인 약(내일부터 등)도 목록 아래에 보여 줘서 수정·삭제할 수 있게 함
+  const later = S.meds.filter(m => m.start && m.start > S.date).sort((a, b) => a.start.localeCompare(b.start) || a.t - b.t);
+  if (!later.length) return '';
+  return '<li class="dose-sub">시작 전인 약</li>' + later.map(m =>
+    `<li class="dose later"><time>${hhmm(m.t)}</time><div class="nm"><span>${whenOf(m.t)}</span>${esc(m.name)}<small>${shortDate(m.start)}부터${m.end ? ` ~${shortDate(m.end)}까지` : ' 매일'}</small></div><span class="st wait">시작 전</span>${actsHtml(m)}</li>`).join('');
 }
 
 /* ───────── 복용 달력 ───────── */
@@ -1028,7 +1076,7 @@ function renderCal() {
     if (info && info.status === 'full') fullN++;
     if (info && info.status === 'miss') missN++;
     const evs = S.events.filter(e => e.date === date);
-    const dots = [...new Set(evs.map(e => e.type === 'add' ? 'add' : e.type === 'streak' ? 'star' : 'end'))].map(k => `<i class="dot ${k}"></i>`).join('');
+    const dots = [...new Set(evs.map(e => e.type === 'add' ? 'add' : e.type === 'edit' ? 'edit' : e.type === 'streak' ? 'star' : 'end'))].map(k => `<i class="dot ${k}"></i>`).join('');
     const bars = S.periods.filter(p => p.start <= date && date <= p.end).slice(0, 3).map(p => `<i style="background:${p.color}"></i>`).join('');
     const mk = !info ? '' : info.status === 'full' ? '✓' : info.status === 'miss' ? `${info.done}/${info.total}` : '';
     const cls = ['cd', info ? info.status : '', date > S.date ? 'future' : '', date === S.date ? 'today' : '', date === calSel ? 'sel' : ''].join(' ');
@@ -1064,6 +1112,7 @@ function calDetailHtml(date) {
     if (e.type === 'add') return `<li><i class="dot add"></i>새 약 추가: ${esc(e.name)} <span class="note">(${esc(e.note || '')})</span></li>`;
     if (e.type === 'end') return `<li><i class="dot end"></i>복용 기간 끝: ${esc(e.name)} <span class="note">(목록에서 자동으로 빠짐)</span></li>`;
     if (e.type === 'remove') return `<li><i class="dot end"></i>약 삭제: ${esc(e.name)}</li>`;
+    if (e.type === 'edit') return `<li><i class="dot edit"></i>약 수정: ${esc(e.name)} <span class="note">(${esc(e.note || '')})</span></li>`;
     return `<li><i class="dot star"></i>${esc(e.name)} 달성!</li>`;
   }).join('') + '</ul>';
   return out;
@@ -1208,37 +1257,111 @@ $('addForm').addEventListener('submit', e => {
   else if (!today) toast(`${name}을(를) 추가했어요. ${prettyDate(med.start)}부터 목록에 나타나요${until}`);
   else toast(`${hhmm(t)} ${name}을(를) 추가했어요${med.end ? ` (${shortDate(med.end)}까지)` : ''}`);
 });
+// ── 며칠분 ↔ 시작일·마지막 날 연동 (약 추가 칸과 수정 창이 함께 씀) ──
+// 'n일치'는 시작일을 포함해서 n일 동안 먹는다는 뜻 → 마지막 날 = 시작일 + (n - 1)일
+// pre: 입력 칸 이름 앞부분. 'per'이면 perDays·perStart·perEnd, 'ePer'이면 ePerDays·ePerStart·ePerEnd
+function periodBox(pre) {
+  const el = k => $(pre + k), box = el('Dates');
+  const mark = n => box.querySelectorAll('[data-days]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.days === n));
+  const daysBetween = (st, en) => Math.round((parseYmd(en) - parseYmd(st)) / 864e5) + 1;
+  const set = n => { el('Days').value = n; if (el('Start').value) el('End').value = addDays(el('Start').value, n - 1); mark(n); };
+  box.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => set(+b.dataset.days)));
+  el('Days').addEventListener('input', () => {
+    const n = Math.floor(+el('Days').value);
+    if (n >= 1 && n <= 365) set(n); else mark(0);   // 1~365일만 반영
+  });
+  el('Start').addEventListener('change', () => {
+    // 시작일을 바꾸면 일수는 그대로 두고 마지막 날을 다시 계산
+    const n = Math.floor(+el('Days').value);
+    if (el('Start').value && n >= 1) el('End').value = addDays(el('Start').value, n - 1);
+  });
+  el('End').addEventListener('change', () => {
+    // 마지막 날을 직접 바꾸면 일수를 거꾸로 계산해서 맞춤
+    const st = el('Start').value, en = el('End').value;
+    if (!st || !en) return;
+    const n = daysBetween(st, en);
+    el('Days').value = n >= 1 ? n : ''; mark(n);
+  });
+  return {
+    set,
+    fill(st, en) { el('Start').value = st; el('End').value = en; const n = daysBetween(st, en); el('Days').value = n; mark(n); }
+  };
+}
+const addBox = periodBox('per'), editBox = periodBox('ePer');
 $('usePeriod').addEventListener('change', e => {
   // 체크하면 시작일=오늘, 5일치로 미리 채워 둠
   $('perDates').hidden = !e.target.checked;
-  if (e.target.checked) { $('perStart').value = S.date; $('perEnd').min = S.date; setDays(5); }
+  if (e.target.checked) { $('perStart').value = S.date; $('perEnd').min = S.date; addBox.set(5); }
 });
-// ── 며칠분 ↔ 시작일·마지막 날 연동 ──
-// 'n일치'는 시작일을 포함해서 n일 동안 먹는다는 뜻 → 마지막 날 = 시작일 + (n - 1)일
-function markQuick(n) { document.querySelectorAll('[data-days]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.days === n)); }
-function setDays(n) {
-  $('perDays').value = n;
-  if ($('perStart').value) $('perEnd').value = addDays($('perStart').value, n - 1);
-  markQuick(n);
+
+/* ───────── 약 수정 ───────── */
+let editId = null;   // 지금 수정 중인 약 번호
+function openEdit(id) {
+  const m = S.meds.find(x => x.id === id); if (!m) return;
+  editId = id;
+  $('eTime').value = hhmm(m.t); $('eName').value = m.name;
+  $('eUsePeriod').checked = !!m.end; $('ePerDates').hidden = !m.end;
+  $('ePerEnd').min = S.date;
+  if (m.end) editBox.fill(m.start || S.date, m.end);
+  else { $('ePerStart').value = m.start || S.date; editBox.set(5); }   // 매일 약: 기간으로 바꿀 때를 대비해 '시작일부터 5일치'로 미리 채움 (이전 약 값이 남지 않게)
+  open('mEdit');
 }
-document.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => setDays(+b.dataset.days)));
-$('perDays').addEventListener('input', () => {
-  const n = Math.floor(+$('perDays').value);
-  if (n >= 1 && n <= 365) setDays(n); else markQuick(0);   // 1~365일만 반영
-});
-$('perStart').addEventListener('change', () => {
-  // 시작일을 바꾸면 일수는 그대로 두고 마지막 날을 다시 계산
-  const n = Math.floor(+$('perDays').value);
-  if ($('perStart').value && n >= 1) $('perEnd').value = addDays($('perStart').value, n - 1);
-});
-$('perEnd').addEventListener('change', () => {
-  // 마지막 날을 직접 바꾸면 일수를 거꾸로 계산해서 맞춤
-  const st = $('perStart').value, en = $('perEnd').value;
-  if (!st || !en) return;
-  const n = Math.round((parseYmd(en) - parseYmd(st)) / 864e5) + 1;
-  $('perDays').value = n >= 1 ? n : ''; markQuick(n);
+$('eUsePeriod').addEventListener('change', e => { $('ePerDates').hidden = !e.target.checked; });
+$('editForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const m = S.meds.find(x => x.id === editId); if (!m) return close('mEdit');
+  const name = $('eName').value.trim();
+  const [h, mi] = ($('eTime').value || '').split(':').map(Number);
+  if (!name || isNaN(h) || isNaN(mi)) return toast('시간과 약 종류를 모두 입력해 주세요');
+  const t = h * 60 + mi;
+  if (S.meds.some(x => x.id !== m.id && x.t === t && x.name === name)) return toast('같은 시간에 같은 약이 이미 있어요');
+  let start = null, end = null;
+  if ($('eUsePeriod').checked) {
+    start = $('ePerStart').value; end = $('ePerEnd').value;
+    if (!start || !end) return toast('시작일과 마지막 날을 모두 골라 주세요');
+    if (end < start) return toast('마지막 날이 시작일보다 앞설 수 없어요');
+    if (end < S.date) return toast('마지막 날이 이미 지났어요. 날짜를 다시 골라 주세요');
+  } else if (m.start && m.start > S.date) start = m.start;   // 매일 약인데 아직 시작 전이면 시작일 유지
+  const before = `${hhmm(m.t)} ${m.name}${m.end ? ` ${shortDate(m.start)}~${shortDate(m.end)}` : ' 매일'}`;
+
+  const oldT = m.t;
+  // 1) 약 설정 고치기
+  Object.assign(m, { name, t, start, end });
+  // 2) 오늘 목록 고치기: 오늘 먹는 약이 아니게 됐으면 빼고(이미 먹었으면 기록 유지), 새로 오늘 약이 됐으면 넣음
+  const dose = S.doses.find(x => x.id === m.id);
+  let note = '';
+  if (dose) {
+    if (!activeOn(m, S.date) && !dose.taken) S.doses = S.doses.filter(x => x.id !== m.id);
+    else if (!dose.taken && t !== oldT && t <= S.min) {
+      // 아직 안 먹은 약의 시각을 이미 지난 시각으로 바꾸면, 바로 경보가 울리지 않게 오늘은 건너뛰고 내일부터
+      S.doses = S.doses.filter(x => x.id !== m.id);
+      if (!m.end) m.start = addDays(S.date, 1);   // 매일 약은 '내일부터'로 표시돼 '시작 전인 약'에 보이게
+      note = ' · 오늘은 이미 지난 시각이라 내일부터 알려 드려요';
+    }
+    else Object.assign(dose, { name, t, when: whenOf(t), start, end });
+  } else if (activeOn(m, S.date)) {
+    if (t > S.min) S.doses.push(makeDose(m));
+    else { m.start = addDays(S.date, 1); if (m.end && m.end < m.start) m.end = m.start; note = ' · 오늘 시각은 이미 지나서 내일부터 알려 드려요'; }   // 약 추가 때와 같은 규칙
+  }
+  S.doses.sort((a, b) => a.t - b.t);
+  // 3) 달력의 기간 막대 고치기
+  const per = S.periods.find(x => x.id === m.id);
+  if (m.end) {
+    if (per) Object.assign(per, { name, start: m.start, end: m.end });
+    else S.periods.push({ id: m.id, name, start: m.start, end: m.end, color: PERIOD_COLORS[S.periods.length % PERIOD_COLORS.length] });
+  } else if (per) {
+    if (per.start > S.date) S.periods = S.periods.filter(x => x !== per);   // 시작 전 기간이었다면 막대 삭제
+    else per.end = S.date;                                                  // 매일 약으로 바뀌면 막대는 오늘까지만
+  }
+  // 4) 달력에 '약 수정' 기록
+  const after = `${hhmm(m.t)} ${m.name}${m.end ? ` ${shortDate(m.start)}~${shortDate(m.end)}` : ' 매일'}`;
+  S.events.push({ date: S.date, type: 'edit', name, note: `${before} → ${after}` });
+  lastListHtml = '';
+  save(); render(); close('mEdit');
+  toast(`${name} 정보를 고쳤어요${note}`);
 });
 $('doseList').addEventListener('click', e => {
+  const ed = e.target.closest('[data-edit]'); if (ed) return openEdit(+ed.dataset.edit);   // '수정' 버튼
   const b = e.target.closest('[data-del]'); if (!b) return;
   const id = +b.dataset.del;
   // 실수로 지우지 않도록: 첫 번째 누름은 '정말 삭제?'로 바뀌고, 3초 안에 한 번 더 누르면 삭제
@@ -1249,12 +1372,13 @@ $('doseList').addEventListener('click', e => {
     return;
   }
   delAsk = null;
-  const d = S.doses.find(x => x.id === id);
+  const d = S.doses.find(x => x.id === id) || S.meds.find(x => x.id === id);
   S.meds = S.meds.filter(x => x.id !== id);
   S.doses = S.doses.filter(x => x.id !== id);
   if (d) S.events.push({ date: S.date, type: 'remove', name: d.name });   // 달력에 '삭제' 기록
   const per = S.periods.find(x => x.id === id);
-  if (per && per.end > S.date) per.end = S.date;   // 기간 약을 중간에 지우면 막대도 오늘까지만
+  if (per && per.start > S.date) S.periods = S.periods.filter(x => x !== per);   // 시작 전에 지우면 막대도 삭제
+  else if (per && per.end > S.date) per.end = S.date;   // 기간 약을 중간에 지우면 막대도 오늘까지만
   if (S.doses.length && S.doses.every(x => x.taken) && !S.dayDone) { S.dayDone = true; S.streak++; }   // 남은 약을 이미 다 먹었다면 오늘 완주
   save(); render();
   if (d) toast(`${d.name}을(를) 목록에서 지웠어요`);
