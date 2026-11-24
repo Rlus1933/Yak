@@ -237,6 +237,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
 /* 시연 도구 */
 .demo { background: transparent; border: 2px dashed var(--accent); border-radius: var(--radius); padding: 12px 16px; font-size: max(14px, calc(var(--fs) * .8)); }
+.demo-ribbon { margin: 0; padding: 8px 14px; border-radius: 12px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); font-size: 14px; font-weight: 700; text-align: center; }
 .demo-title { margin: 0; font-size: 1em; font-weight: 700; color: var(--accent); }
 .foot { font-size: 13px; color: var(--muted); text-align: center; line-height: 1.6; margin: 4px 0 0; }
 .wipe-btn { align-self: center; background: transparent; border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 8px 18px; font-size: 14px; font-family: "Noto Sans KR", sans-serif; }
@@ -373,6 +374,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 </style>
 
 <div class="app">
+  <p class="demo-ribbon" id="demoRibbon" hidden>발표 시연 중이에요 · 여기서 바뀐 내용은 시연 모드를 끄면 사라지고 원래 기록으로 돌아가요</p>
   <header class="top">
     <div class="top-row">
       <h1 class="brand">
@@ -756,7 +758,7 @@ function makeStart(today) {
     meds, periods, events, history, date: today, dayDone: false, example: true };
 }
 const S = {
-  ...makeStart(TODAY),
+  ...makeEmpty(TODAY),
   min: 8 * 60 + 3,   // 가상 시계 (하루 0시부터 몇 분 지났는지). 시작은 08:03
   speed: 1, sound: true, voice: false, age: 'elder',
   demo: false, sirenSkip: null,   // demo: 시연 모드 켜짐 여부, sirenSkip: 경보를 건너뛴 약의 번호
@@ -773,7 +775,7 @@ try {
   const saved = JSON.parse(localStorage.getItem('yak-state') || 'null');
   if (saved) {
     Object.assign(S, saved);
-    if (!saved.history) Object.assign(S, (({ history, events, periods, date }) => ({ history, events, periods, date }))(makeStart(TODAY)));   // 예전 버전 저장분에는 달력 기록이 없음
+    if (!saved.history) Object.assign(S, (({ history, events, periods, date }) => ({ history, events, periods, date }))(makeEmpty(TODAY)));   // 예전 버전 저장분에는 달력 기록이 없음
     savedDoses = saved.doses || null;
   }
 } catch (e) {}
@@ -787,6 +789,26 @@ function save() {
 function finishDay() {
   // 하루가 끝날 때 오늘 먹은 약 기록을 달력에 저장
   if (S.doses.length) S.history[S.date] = { items: S.doses.map(d => ({ name: d.name, t: d.t, taken: !!d.taken })) };
+}
+/* ── 시연 모드 = 연습장 ──
+   시연 모드를 켜면 지금의 '실제 기록'을 yak-real에 따로 보관하고 예시 상태로 바꾼다.
+   시연 모드에서 바뀐 것은 시연 기록일 뿐이고, 끄면 보관해 둔 실제 기록으로 되돌아간다. */
+const DATA_KEYS = ['points', 'streak', 'owned', 'title', 'skin', 'dialect', 'meds', 'periods', 'events', 'history', 'date', 'doses', 'dayDone', 'example', 'min'];
+let realMemory = null;   // 저장소가 막힌 환경을 위한 예비 보관함
+function pickData() { const o = {}; DATA_KEYS.forEach(k => o[k] = structuredClone(S[k])); return o; }
+function storeReal(obj) { realMemory = obj; try { localStorage.setItem('yak-real', JSON.stringify(obj)); } catch (e) {} }
+function loadReal() { try { const r = JSON.parse(localStorage.getItem('yak-real') || 'null'); if (r) return r; } catch (e) {} return realMemory; }
+function dropReal() { realMemory = null; try { localStorage.removeItem('yak-real'); } catch (e) {} }
+function enterDemo() {
+  storeReal(pickData());                                   // 1) 실제 기록 보관
+  Object.assign(S, makeStart(TODAY), { min: 8 * 60 + 3 });  // 2) 시연용 예시 상태로 바꿈
+  S.doses = makeDoses(S.meds);
+}
+function leaveDemo() {
+  const real = loadReal() || { ...makeEmpty(TODAY), min: 8 * 60 + 3 };   // 보관한 게 없으면 빈 상태
+  Object.assign(S, real);
+  if (!real.doses) S.doses = makeDoses(S.meds);
+  dropReal();
 }
 function expireMeds() {
   // 마지막 날이 지난 기간 약은 자동으로 목록에서 빼고, 달력에 '기간 끝' 기록을 남김
@@ -934,6 +956,7 @@ function render() {
 
   // 시연 모드 표시 (시연 도구 상자, 건너뛰기 버튼)
   $('demoPanel').hidden = !S.demo;
+  $('demoRibbon').hidden = !S.demo;
   $('sirenSkip').hidden = !S.demo;
   $('catSkip').hidden = !S.demo;
   $('demoToggle').setAttribute('aria-checked', S.demo);
@@ -1098,7 +1121,7 @@ $('resetAll').addEventListener('click', () => {
 $('wipeBtn').addEventListener('click', () => {
   // 시연 모드인지에 따라 지운 뒤 어떤 상태가 되는지 안내 문구를 바꿈
   $('wipeDesc').textContent = S.demo
-    ? '이 기기에 저장된 아래 내용이 모두 지워져요. 지금은 발표 시연 모드라서, 지운 뒤 시연용 예시 약과 예시 달력 기록으로 다시 시작해요.'
+    ? '실제 기록과 시연 기록이 모두 지워져요. 지금은 발표 시연 모드라서 시연용 예시로 다시 시작하고, 시연 모드를 끄면 빈 상태가 돼요.'
     : '이 기기에 저장된 아래 내용이 모두 지워지고, 약도 기록도 없는 빈 상태로 다시 시작해요. 되돌릴 수 없어요.';
   open('mWipe');
 });
@@ -1115,7 +1138,8 @@ $('wipeOk').addEventListener('click', async () => {
   Object.assign(S, demo ? makeStart(TODAY) : makeEmpty(TODAY), { min: 8 * 60 + 3, sirenSkip: null, speed: 1, age: 'elder', demo });
   S.doses = makeDoses(S.meds);
   calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
-  save();   // 새 상태를 저장해 둠 (저장된 게 없으면 새로고침 때 무조건 시연용 예시가 채워지기 때문)
+  if (demo) storeReal({ ...makeEmpty(TODAY), min: 8 * 60 + 3 });   // 시연 모드를 끄면 돌아갈 실제 기록도 빈 상태로
+  save();   // 새 상태를 저장해 둠
   close('mWipe'); render(); toast(demo ? '기록을 지우고 시연용 예시로 다시 시작해요' : '모든 기록을 지웠어요');
   // 3) 페이지를 새로 불러와 완전히 처음부터 시작
   setTimeout(() => { try { location.reload(); } catch (e) {} }, 900);
@@ -1129,8 +1153,13 @@ $('sirenMute').addEventListener('click', () => { S.sound = false; sirenOff(); re
 
 /* ───────── 시연 모드 ───────── */
 $('demoToggle').addEventListener('click', () => {
-  S.demo = !S.demo; save(); render();
-  toast(S.demo ? '발표 시연 모드를 켰어요. 아래에 시연 도구가 나타나요' : '발표 시연 모드를 껐어요');
+  sirenOff(); S.sirenSkip = null;
+  if (!S.demo) enterDemo(); else leaveDemo();
+  S.demo = !S.demo;
+  calSel = S.date; calMonth = S.date.slice(0, 7); lastCalHtml = '';
+  save(); render();
+  toast(S.demo ? '발표 시연 모드를 켰어요. 지금 기록은 따로 보관해 두고 시연용 예시를 보여 드려요'
+               : '발표 시연 모드를 껐어요. 원래 기록으로 돌아왔어요');
 });
 $('sirenSkip').addEventListener('click', () => {
   // 경보만 닫음. 약은 '먹음'이 아니라 그대로 '지남'으로 남음
