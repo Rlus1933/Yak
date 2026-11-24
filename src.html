@@ -167,6 +167,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .add-med label.per-toggle { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 10px; color: var(--ink); cursor: pointer; }
 .add-med label.per-toggle input { width: 22px; height: 22px; accent-color: var(--accent); flex: none; }
 .per-dates { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* 며칠분 입력: 숫자 칸 + 자주 쓰는 일수 버튼 */
+.per-days { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: end; gap: 8px; }
+.per-days label { flex: 0 0 auto; }
+.per-days .days-in { display: flex; align-items: center; gap: 6px; color: var(--ink); }
+.per-days .days-in input { width: 5.5em; text-align: center; }
+.per-days .quick { display: flex; flex-wrap: wrap; gap: 6px; }
+.per-days .quick button { border: 2px solid var(--line); background: var(--bg); border-radius: 999px; padding: 8px 14px; font-weight: 700; font-size: .85em; }
+.per-days .quick button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent); color: var(--on-accent); }
 .dose .nm small { display: block; font-size: .72em; color: var(--muted); }
 .dose .nm small b { color: var(--accent); font-weight: 700; }
 
@@ -415,6 +423,15 @@ details.demo summary { cursor: pointer; font-weight: 700; color: var(--muted); }
       <label for="medName">약 종류<input type="text" id="medName" placeholder="예: 관절약" maxlength="20" required></label>
       <label class="per-toggle" for="usePeriod"><input type="checkbox" id="usePeriod"> 정해진 기간만 먹는 약이에요</label>
       <div class="per-dates" id="perDates" hidden>
+        <div class="per-days">
+          <label for="perDays">며칠분 약인가요?<span class="days-in"><input type="number" id="perDays" min="1" max="365" inputmode="numeric" value="5">일치</span></label>
+          <div class="quick" role="group" aria-label="자주 쓰는 일수">
+            <button type="button" data-days="3">3일</button>
+            <button type="button" data-days="5">5일</button>
+            <button type="button" data-days="7">7일</button>
+            <button type="button" data-days="14">14일</button>
+          </div>
+        </div>
         <label for="perStart">시작일<input type="date" id="perStart"></label>
         <label for="perEnd">마지막 날<input type="date" id="perEnd"></label>
       </div>
@@ -1122,9 +1139,34 @@ $('addForm').addEventListener('submit', e => {
   else toast(`${hhmm(t)} ${name}을(를) 추가했어요${med.end ? ` (${shortDate(med.end)}까지)` : ''}${t <= S.min ? ' · 이미 지난 시간이라 바로 알림이 시작돼요' : ''}`);
 });
 $('usePeriod').addEventListener('change', e => {
-  // 체크하면 시작일=오늘, 마지막 날=5일째로 미리 채워 둠
+  // 체크하면 시작일=오늘, 5일치로 미리 채워 둠
   $('perDates').hidden = !e.target.checked;
-  if (e.target.checked) { $('perStart').value = S.date; $('perEnd').value = addDays(S.date, 4); $('perEnd').min = S.date; }
+  if (e.target.checked) { $('perStart').value = S.date; $('perEnd').min = S.date; setDays(5); }
+});
+// ── 며칠분 ↔ 시작일·마지막 날 연동 ──
+// 'n일치'는 시작일을 포함해서 n일 동안 먹는다는 뜻 → 마지막 날 = 시작일 + (n - 1)일
+function markQuick(n) { document.querySelectorAll('[data-days]').forEach(b => b.setAttribute('aria-pressed', +b.dataset.days === n)); }
+function setDays(n) {
+  $('perDays').value = n;
+  if ($('perStart').value) $('perEnd').value = addDays($('perStart').value, n - 1);
+  markQuick(n);
+}
+document.querySelectorAll('[data-days]').forEach(b => b.addEventListener('click', () => setDays(+b.dataset.days)));
+$('perDays').addEventListener('input', () => {
+  const n = Math.floor(+$('perDays').value);
+  if (n >= 1 && n <= 365) setDays(n); else markQuick(0);   // 1~365일만 반영
+});
+$('perStart').addEventListener('change', () => {
+  // 시작일을 바꾸면 일수는 그대로 두고 마지막 날을 다시 계산
+  const n = Math.floor(+$('perDays').value);
+  if ($('perStart').value && n >= 1) $('perEnd').value = addDays($('perStart').value, n - 1);
+});
+$('perEnd').addEventListener('change', () => {
+  // 마지막 날을 직접 바꾸면 일수를 거꾸로 계산해서 맞춤
+  const st = $('perStart').value, en = $('perEnd').value;
+  if (!st || !en) return;
+  const n = Math.round((parseYmd(en) - parseYmd(st)) / 864e5) + 1;
+  $('perDays').value = n >= 1 ? n : ''; markQuick(n);
 });
 $('doseList').addEventListener('click', e => {
   const b = e.target.closest('[data-del]'); if (!b) return;
